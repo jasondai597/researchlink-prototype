@@ -1,22 +1,28 @@
+import { useState } from 'react'
 import { formatDate } from '../lib/dates'
-import { RobotSpot } from './Art'
+import { CHANNEL_LABELS, draftMessage, draftSubject, mailtoHref } from '../lib/outreach'
 import { groupTasks, toICS, type Task } from '../lib/plan'
-import type { Opportunity } from '../lib/types'
+import type { ContactChannel, Opportunity, Profile } from '../lib/types'
+import { RobotSpot } from './Art'
 
 export function Plan({
   selected,
   tasks,
   done,
   today,
+  profile,
   onToggleDone,
   onBack,
+  onBrowse,
 }: {
   selected: Opportunity[]
   tasks: Task[]
   done: string[]
   today: Date
+  profile: Profile | null
   onToggleDone: (id: string) => void
   onBack: () => void
+  onBrowse: () => void
 }) {
   const titleFor = (id: string) => selected.find((o) => o.id === id)?.title ?? id
   const next = tasks.find((t) => !done.includes(t.id))
@@ -37,10 +43,15 @@ export function Plan({
         <h1>Your action plan</h1>
         <div className="empty">
           <RobotSpot pose="wave" className="empty-robot" />
-          <p>Nothing in your plan yet. Add matches you want to apply to and your steps and deadlines show up here.</p>
-          <button className="btn" type="button" onClick={onBack}>
-            Back to my matches
-          </button>
+          <p>Nothing in your plan yet. Add opportunities from your matches or the directory, and your steps and deadlines show up here.</p>
+          <div className="row">
+            <button className="btn btn-primary" type="button" onClick={onBack}>
+              Get matched
+            </button>
+            <button className="btn" type="button" onClick={onBrowse}>
+              Browse all opportunities
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -116,6 +127,7 @@ export function Plan({
                         <span className="task-for">For: {t.forIds.map(titleFor).join('; ')}</span>
                       </span>
                     </label>
+                    {t.outreach && <Outreach o={selected.find((o) => o.id === t.outreach)!} profile={profile} />}
                   </li>
                 )
               })}
@@ -124,5 +136,69 @@ export function Plan({
         ))}
       </ol>
     </div>
+  )
+}
+
+const CHANNELS: ContactChannel[] = ['chat', 'office-hours', 'email']
+const CHANNEL_HOW: Record<ContactChannel, string> = {
+  chat: 'Ask for 10 minutes to learn what the first weeks involve. Lowest pressure for both sides.',
+  'office-hours': 'Bring two specific questions. No appointment needed.',
+  email: 'Keep it under 120 words with one clear question. Follow up once after five working days.',
+}
+
+function Outreach({ o, profile }: { o: Opportunity; profile: Profile | null }) {
+  const [copied, setCopied] = useState(false)
+  const c = o.contact!
+  const text = draftMessage(o, profile)
+  const mailto = mailtoHref(o, profile)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(`Subject: ${draftSubject(o)}\n\n${text}`)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <details className="outreach">
+      <summary>Ways to reach out, with a message draft</summary>
+      <div className="outreach-body">
+        <p className="outreach-who">
+          <b>{c.name}</b>, {c.role}
+          {c.when ? ` · ${c.when}` : ''}
+        </p>
+        <ul className="outreach-ways">
+          {[c.channel, ...CHANNELS.filter((ch) => ch !== c.channel && c.email !== null && ch !== 'office-hours')].map((ch) => (
+            <li key={ch} className={ch === c.channel ? 'way way-preferred' : 'way'}>
+              <span className="way-name">
+                {CHANNEL_LABELS[ch]}
+                {ch === c.channel && <span className="way-tag">They prefer this</span>}
+              </span>
+              <span className="way-how">{CHANNEL_HOW[ch]}</span>
+            </li>
+          ))}
+        </ul>
+        <label className="field">
+          Message draft{profile ? '' : ' (fill in the [brackets], or complete your profile first)'}
+          <textarea readOnly rows={9} value={`Subject: ${draftSubject(o)}\n\n${text}`} />
+        </label>
+        <div className="row">
+          <button className="btn" type="button" onClick={copy}>
+            {copied ? 'Copied' : 'Copy message'}
+          </button>
+          {mailto && (
+            <a className="btn" href={mailto}>
+              Open in email app
+            </a>
+          )}
+          <span role="status" className="sr-only">
+            {copied ? 'Message copied' : ''}
+          </span>
+        </div>
+      </div>
+    </details>
   )
 }

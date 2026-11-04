@@ -120,8 +120,10 @@ export default function App() {
             tasks={tasks}
             done={saved.done}
             today={today}
+            profile={saved.profile}
             onToggleDone={(id) => update({ done: saved.done.includes(id) ? saved.done.filter((x) => x !== id) : [...saved.done, id] })}
-            onBack={() => go('results')}
+            onBack={() => go(saved.profile ? 'results' : 'start')}
+            onBrowse={() => go('browse')}
           />
         )}
       </main>

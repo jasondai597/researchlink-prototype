@@ -1,4 +1,5 @@
 import { addDays, daysBetween, iso, parseDate } from './dates'
+import { outreachTitle } from './outreach'
 import type { DocumentType, Opportunity } from './types'
 
 export interface Task {
@@ -8,6 +9,7 @@ export interface Task {
   due: string // YYYY-MM-DD
   forIds: string[]
   late: boolean // the ideal date has already passed
+  outreach?: string // opportunity id: this step is an informal first contact
 }
 
 /** Days before the deadline each step should be done. */
@@ -51,6 +53,12 @@ const STEPS: Record<DocumentType, { days: number; title: string; detail: string;
 }
 
 export const ROLLING_DAYS = 14 // treat rolling deadlines as "apply within two weeks"
+/** Reach out informally three weeks before a deadline; for rolling listings, within two days. */
+export const OUTREACH_DAYS = 21
+export const OUTREACH_ROLLING_DAYS = 2
+
+const OUTREACH_DETAIL =
+  'A short, specific message lets you check fit and timing before you apply, and puts your name in front of the person who decides.'
 
 export function buildPlan(selected: Opportunity[], today: Date): Task[] {
   const shared = new Map<DocumentType, Task>()
@@ -64,6 +72,10 @@ export function buildPlan(selected: Opportunity[], today: Date): Task[] {
 
   for (const o of selected) {
     const deadline = o.deadline ? parseDate(o.deadline) : addDays(today, ROLLING_DAYS)
+    if (o.contact) {
+      const when = o.deadline ? schedule(deadline, OUTREACH_DAYS) : { due: iso(addDays(today, OUTREACH_ROLLING_DAYS)), late: false }
+      tasks.push({ id: `${o.id}-outreach`, title: outreachTitle(o), detail: OUTREACH_DETAIL, due: when.due, forIds: [o.id], late: when.late, outreach: o.id })
+    }
     for (const doc of o.documents) {
       const step = STEPS[doc]
       const { due, late } = schedule(deadline, step.days)

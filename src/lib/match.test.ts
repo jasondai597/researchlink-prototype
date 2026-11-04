@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { sampleOpportunities } from '../data/opportunities'
 import { groupOf, match } from './match'
+import { draftMessage, mailtoHref } from './outreach'
 import { buildPlan, toICS } from './plan'
 import type { Profile } from './types'
 
@@ -107,5 +108,42 @@ describe('action plan', () => {
     expect(ics.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true)
     expect(ics).toContain('DTSTART;VALUE=DATE:')
     expect(ics.trim().endsWith('END:VCALENDAR')).toBe(true)
+  })
+})
+
+describe('informal outreach', () => {
+  it('adds a first-contact step three weeks before the deadline, named for the preferred channel', () => {
+    const tasks = buildPlan([byId('uq-ml')], TODAY) // deadline Dec 4, contact prefers email
+    const t = tasks.find((x) => x.outreach === 'uq-ml')!
+    expect(t.title).toBe('Email Priya Natarajan before you apply')
+    expect(t.due).toBe('2026-11-13')
+    expect(t.late).toBe(false)
+  })
+
+  it('schedules outreach within two days for rolling listings, without flagging it late', () => {
+    const t = buildPlan([byId('nlp-labelling')], TODAY).find((x) => x.outreach)!
+    expect(t.title).toBe('Book a 10-minute chat with Maya Chen')
+    expect(t.due).toBe('2026-11-06')
+    expect(t.late).toBe(false)
+  })
+
+  it('drafts a message from the profile, with placeholders when there is none', () => {
+    const o = byId('uq-ml')
+    const withProfile = draftMessage(o, profile())
+    expect(withProfile).toContain("I'm a 3rd year Statistics student")
+    expect(withProfile).toContain('Python and Machine learning')
+    expect(withProfile).toContain('10 hours a week')
+    expect(withProfile.startsWith('Hi Priya,')).toBe(true)
+    expect(draftMessage(o, null)).toContain('[year] year [program]')
+    expect(mailtoHref(o, null)).toMatch(/^mailto:priya\.natarajan@example\.com\?subject=/)
+  })
+})
+
+describe('outreach wording', () => {
+  it('names offices naturally', () => {
+    const t = buildPlan([byId('first-year-program')], TODAY).find((x) => x.outreach)!
+    expect(t.title).toBe('Drop in to the program office')
+    const e = buildPlan([byId('summer-award')], TODAY).find((x) => x.outreach)!
+    expect(e.title).toBe('Email the awards office before you apply')
   })
 })
