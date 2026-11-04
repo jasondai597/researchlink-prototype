@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { BrandMark, RobotSpot } from './components/Art'
 import { Intake } from './components/Intake'
 import { Plan } from './components/Plan'
 import { Results } from './components/Results'
@@ -12,6 +13,7 @@ export default function App() {
   const opportunities = useMemo(() => sampleOpportunities(today), [today])
   const { saved, update, reset } = useSaved()
   const [route, go] = useHashRoute()
+  const [matching, setMatching] = useState(false)
 
   const matched = useMemo(() => (saved.profile ? match(opportunities, saved.profile, today) : null), [opportunities, saved.profile, today])
   const selectedOps = useMemo(
@@ -26,6 +28,7 @@ export default function App() {
     <>
       <header className="topbar">
         <a className="brand" href="#/start">
+          <BrandMark />
           ResearchLink
         </a>
         <nav aria-label="Steps" className="steps">
@@ -42,13 +45,30 @@ export default function App() {
       </header>
       <p className="sample-banner">Prototype: every program, lab and deadline here is a made-up sample.</p>
 
+      {matching && (
+        <div className="matching" role="status" aria-live="polite">
+          <RobotSpot pose="search" className="matching-robot" />
+          <p className="matching-title">Checking {opportunities.length} opportunities against your profile</p>
+          <p className="muted">Skills, interests, time and deadlines</p>
+        </div>
+      )}
+
       <main className="main">
         {page === 'intake' && (
           <Intake
             initial={saved.profile}
             onSubmit={(profile) => {
               update({ profile })
-              go('results')
+              // One short "matching" moment, skipped for people who prefer reduced motion.
+              if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                go('results')
+                return
+              }
+              setMatching(true)
+              window.setTimeout(() => {
+                setMatching(false)
+                go('results')
+              }, 1100)
             }}
           />
         )}
@@ -78,7 +98,7 @@ export default function App() {
       </main>
 
       <footer className="foot">
-        <span>Student-built prototype. Not affiliated with the University of Toronto.</span>
+        <span>Made in Toronto by U of T students. Not affiliated with or endorsed by the University of Toronto.</span>
         <button
           className="link"
           type="button"

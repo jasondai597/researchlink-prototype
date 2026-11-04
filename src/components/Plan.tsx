@@ -1,4 +1,5 @@
 import { formatDate } from '../lib/dates'
+import { RobotSpot } from './Art'
 import { groupTasks, toICS, type Task } from '../lib/plan'
 import type { Opportunity } from '../lib/types'
 
@@ -35,6 +36,7 @@ export function Plan({
       <div className="plan">
         <h1>Your action plan</h1>
         <div className="empty">
+          <RobotSpot pose="wave" className="empty-robot" />
           <p>Nothing in your plan yet. Add matches you want to apply to and your steps and deadlines show up here.</p>
           <button className="btn" type="button" onClick={onBack}>
             Back to my matches
@@ -68,6 +70,7 @@ export function Plan({
 
       {next && (
         <section className="first">
+          <RobotSpot pose="calendar" className="first-robot" />
           <p className="first-label">Do this first</p>
           <p className="first-title">{next.title}</p>
           <p>

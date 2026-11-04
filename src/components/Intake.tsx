@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { AREAS, COMP_LABELS, EXPERIENCE_TYPES, LEVEL_LABELS, SKILLS, TERM_LABELS } from '../data/catalog'
+import { HeroArt } from './Art'
 import type { Compensation, Experience, FederalEligibility, Profile, Purpose, SkillLevel, Term } from '../lib/types'
 
 const BLANK: Profile = {
@@ -56,6 +57,8 @@ export function Intake({ initial, onSubmit }: { initial: Profile | null; onSubmi
   return (
     <div className="intake">
       <div className="intake-intro">
+        <HeroArt />
+        <p className="eyebrow-place">Made in Toronto for U of T undergrads</p>
         <h1>Where could you do research?</h1>
         <p className="lede">
           Answer a few questions and we'll match you to research programs and projects you can actually apply to, explain

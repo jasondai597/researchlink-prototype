@@ -1,4 +1,5 @@
 import { AREAS, COMP_LABELS, DOC_LABELS } from '../data/catalog'
+import { RobotSpot } from './Art'
 import { formatDate } from '../lib/dates'
 import { groupOf } from '../lib/match'
 import type { Band, Excluded, MatchResult, Profile } from '../lib/types'
@@ -39,6 +40,7 @@ export function Results({
   return (
     <div className="results">
       <header className="results-head">
+        <RobotSpot pose="search" className="head-robot" />
         <h1>Your matches</h1>
         <p className="muted">
           Year {profile.year}
