@@ -1,79 +1,69 @@
-# ResearchLink: clickable reference prototype (CSC318 Group 20)
+# ResearchLink
 
-A clickable web version of our three A2 concepts, so everyone draws the **paper
-prototype** from the same screens. This is a drawing reference, not the A2
-deliverable: the A2 prototype must still be hand-drawn with pen and paper.
+Helps UofT undergrads find research they can actually apply to. You answer a few
+questions about your experience, skills, availability and interests; ResearchLink
+matches you to research programs and projects, explains why each one fits, and turns
+the deadlines into a step-by-step action plan you can add to your calendar.
 
-All labs, people and projects in it are **fictional**.
+**Status: prototype.** Every program, lab and deadline in it is a made-up sample.
 
-## Open it (no install)
+## What it does
 
-1. Download: green **Code** button → **Download ZIP**, then unzip. (Or `git clone` it.)
-2. Double-click **`index.html`**. It opens in your browser. That's it.
+1. **Profile (intake):** year, program, research experience, skills (self-rated:
+   familiar / can use it / confident), hours per week, terms, what you're looking for
+   (credit / paid / volunteer), interest areas plus a free-text description, and
+   optional eligibility (GPA, federal award eligibility).
+2. **Matching:**
+   - **Hard filters first.** Passed deadlines, year limits, terms that don't overlap,
+     and eligibility rules remove an opportunity, and the results page lists what was
+     hidden and why.
+   - **Then a weighted score:** skills 40% (full credit at the required level, half
+     credit one level below), interests 30% (area overlap blended with TF-IDF cosine
+     similarity between your free text and the listing), time 20%, experience 10%.
+     A compensation type you didn't ask for reduces the score by 15%.
+   - **Shown as bands with reasons** (Strong match / Worth a try / Stretch), not as a
+     percentage. The weights aren't calibrated against real outcomes, so a number
+     would look more precise than it is.
+3. **Results:** grouped into *Apply now* (deadline within 6 weeks, or rolling),
+   *Plan ahead* and *Stretch picks*. Each card lists what fits, what's missing, and the
+   documents you'll need.
+4. **Action plan:** each step is scheduled backwards from its deadline (contact
+   supervisors 35 days before, references 28, CV 14, transcript 10, statement 10,
+   form 3, submit 2). Steps shared across applications, such as the CV, are merged.
+   A step whose ideal date has already passed moves to today and is flagged. You can
+   check steps off, export them to a calendar (.ics), or print the plan.
 
-Your clicks (roadmap answers, saved projects, requests) are stored only in your own
-browser. To start over: **All screens** page → **Reset demo data**.
+Your answers stay in your own browser (localStorage). There is no backend.
 
-## How to use it for the paper prototype
+## Run it
 
-- Turn on **Drawing notes** (top right, on by default). The yellow panel shows, for
-  each screen: its ID (S1–S11), which concept it comes from, which A1 design
-  requirements (DR1–DR5) it serves, and a checklist of what to draw.
-- Open **All screens** (link at the bottom of the notes, or `index.html#/screens`) to
-  split the screens among us. Draw each screen on its own sheet and write its ID in
-  the corner so the "computer" in the think-aloud can find it fast.
-- The DR tags are there for the report: the paper prototype section needs a
-  rationale for each feature, and the storyboards must cite the requirements.
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm test         # matching and plan tests
+npm run build    # production build in dist/
+```
 
-## Screens
+## Code map
 
-| ID  | Screen | Concept | DRs |
-|-----|--------|---------|-----|
-| S1  | Home | A, B | DR1 |
-| S2  | Browse open projects | A, B | DR1, DR2, DR5 |
-| S3  | Categories | A | DR1 |
-| S4  | Project details | A, B, C | DR2, DR3, DR5 |
-| S5  | Roadmap: 3 questions | B | DR2 |
-| S6  | My roadmap | B | DR2, DR3 |
-| S7  | Request a 10-min chat | C, B | DR3, DR4, DR5 |
-| S8  | My candidate snapshot | C | DR3, DR4 |
-| S9  | Contact tracker | B | DR3 |
-| S10 | Supervisor inbox | C | DR4, DR5 |
-| S11 | Contact preferences | C | DR3, DR5 |
+```
+src/data/opportunities.ts   sample listings (replace with verified data)
+src/data/catalog.ts         skills, areas, labels used by the form
+src/lib/match.ts            filters, scoring, bands, reasons
+src/lib/plan.ts             backwards scheduling, merging, .ics export
+src/lib/match.test.ts       tests for both
+src/components/             Intake, Results, Plan pages
+```
 
-Concepts (from our S2a deck): **A** Resource integration platform · **B** Research
-roadmap · **C** Informal, low-stakes communication.
-Design requirements: **DR1** Find what's open · **DR2** Know what's required ·
-**DR3** Feel ready to reach out · **DR4** Ease the screening load · **DR5** Agree on
-time & style.
+## Roadmap
 
-## Main flows (good think-aloud tasks)
+- [ ] Replace the sample data with verified UofT programs (each with a source URL and
+      a last-verified date), then a small set of lab projects
+- [ ] Embedding-based interest similarity (in the browser, no API)
+- [ ] User testing with 3–5 undergrads; tune the weights from what they say
+- [ ] Supervisor side: post a project with structured requirements
 
-1. Student who knows what they want: S1 → S2 → S4 → S7 → S9
-2. Student who doesn't know where to start: S1 → S5 → S6 → S4 → S7
-3. Preparing a first contact: S8 → S7 → S9
-4. Supervisor: S10 (accept a request) → student's S9 shows "Chat confirmed"; S11 edits
-   what students see on S4
+`paper-prototype-reference/` is the earlier clickable reference of all three CSC318
+concepts, kept for the group's paper prototype.
 
-## Things to decide as a group before drawing
-
-This prototype includes **every** feature from all three concepts. A2 asks us to
-pick or combine concepts *based on stakeholder feedback*, so cut what the feedback
-didn't support. Open questions:
-
-- **Fit score as a percentage.** A low score (try a project that shows "Fit 0%") may
-  discourage students, which was our own top risk for Concept B. Keep it, switch to
-  bands (Strong / Possible / Stretch), or drop the number? Worth testing in the
-  think-aloud.
-- **Too many first-contact options?** S4 offers chat request, save, and apply. Do
-  participants know which to pick?
-- **Supervisor side in scope?** S10–S11 serve DR4/DR5 but double the drawing work.
-
-## Editing
-
-- Projects, labs, skills, categories: `data.js`
-- Screen notes (IDs, concepts, DRs, what to draw): `screens.js`
-- Screens and behaviour: `app.js` · Styles: `styles.css`
-
-Plain HTML/CSS/JavaScript, no build step. Built with help from Claude (AI); check the
-course policy before reusing any of it in a submission.
+*Student-built. Not affiliated with the University of Toronto.*
