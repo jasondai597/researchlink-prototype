@@ -21,7 +21,15 @@ action plan with deadlines. Vite + React + TypeScript, no backend.
   produce a reason or a gap the student can read. Show bands, not percentages.
   When you change weights or rules, update the tests and the README.
 - **Plan:** step offsets live in `STEPS` in `src/lib/plan.ts`; shared documents (CV,
-  transcript, reference) are merged across applications.
+  transcript, reference) are merged across applications. Informal outreach timing is
+  `OUTREACH_DAYS` / `OUTREACH_ROLLING_DAYS`; drafts live in `src/lib/outreach.ts`.
+- **Freshness:** `STALE_AFTER_DAYS` in `src/lib/directory.ts` applies to both the
+  directory and matching. Don't show a listing anywhere once it's stale or past its
+  deadline.
+- **Contacts:** sample contacts must use `example.com` emails. The app never sends
+  messages; it only drafts them.
+- **Art:** illustrations are in `src/components/Art.tsx`. No university crests, logos
+  or wordmarks.
 - **UI:** keep it accessible: real form controls, visible focus, labels on every
   input, works at 390px wide, light and dark mode.
 - `paper-prototype-reference/` is a separate static file for the CSC318 paper

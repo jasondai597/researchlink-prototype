@@ -3,7 +3,8 @@
 Helps UofT undergrads find research they can actually apply to. You answer a few
 questions about your experience, skills, availability and interests; ResearchLink
 matches you to research programs and projects, explains why each one fits, and turns
-the deadlines into a step-by-step action plan you can add to your calendar.
+the deadlines into a step-by-step action plan you can add to your calendar. Or skip
+matching and browse every open listing, each one showing when it was last verified.
 
 **Status: prototype.** Every program, lab and deadline in it is a made-up sample.
 
@@ -27,11 +28,23 @@ the deadlines into a step-by-step action plan you can add to your calendar.
 3. **Results:** grouped into *Apply now* (deadline within 6 weeks, or rolling),
    *Plan ahead* and *Stretch picks*. Each card lists what fits, what's missing, and the
    documents you'll need.
-4. **Action plan:** each step is scheduled backwards from its deadline (contact
+4. **Directory:** every open listing in one place, searchable and filterable by
+   type, area, compensation and term, sorted by most recently verified or by
+   deadline. Each listing shows when it was last checked against its source.
+   Listings past their deadline or not re-verified within 30 days are withdrawn from
+   the directory *and* from matching, and the page says how many were withdrawn.
+   You can add listings to your plan straight from here, without the intake.
+5. **Action plan:** each step is scheduled backwards from its deadline (contact
    supervisors 35 days before, references 28, CV 14, transcript 10, statement 10,
    form 3, submit 2). Steps shared across applications, such as the CV, are merged.
    A step whose ideal date has already passed moves to today and is flagged. You can
    check steps off, export them to a calendar (.ics), or print the plan.
+6. **Informal outreach:** when a listing has a contact, the plan adds a first-contact
+   step 21 days before the deadline (within 2 days for rolling listings), named for
+   the contact's preferred channel: a 10-minute chat, office hours or email. It shows
+   the alternatives and a message draft built from your profile, with placeholders if
+   you haven't filled one in. Copy it or open it in your email app; the site never
+   sends anything itself.
 
 Your answers stay in your own browser (localStorage). There is no backend.
 
@@ -51,8 +64,10 @@ src/data/opportunities.ts   sample listings (replace with verified data)
 src/data/catalog.ts         skills, areas, labels used by the form
 src/lib/match.ts            filters, scoring, bands, reasons
 src/lib/plan.ts             backwards scheduling, merging, .ics export
-src/lib/match.test.ts       tests for both
-src/components/             Intake, Results, Plan pages
+src/lib/directory.ts        freshness rules, directory filters and sorting
+src/lib/outreach.ts         informal first-contact steps and message drafts
+src/lib/*.test.ts           tests
+src/components/             Intake, Results, Browse, Plan pages; Art (illustrations)
 ```
 
 ## Roadmap
