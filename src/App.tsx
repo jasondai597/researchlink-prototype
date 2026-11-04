@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BrandMark, RobotSpot } from './components/Art'
+import { BrandMark, HeroArt, RobotSpot } from './components/Art'
 import { Intake } from './components/Intake'
 import { Plan } from './components/Plan'
 import { Results } from './components/Results'
@@ -26,7 +26,7 @@ export default function App() {
 
   return (
     <>
-      <header className="topbar">
+      <header className="topbar on-navy">
         <a className="brand" href="#/start">
           <BrandMark />
           ResearchLink
@@ -43,17 +43,32 @@ export default function App() {
           </a>
         </nav>
       </header>
-      <p className="sample-banner">Prototype: every program, lab and deadline here is a made-up sample.</p>
+      <p className="sample-banner on-navy">Prototype: every program, lab and deadline here is a made-up sample.</p>
 
       {matching && (
-        <div className="matching" role="status" aria-live="polite">
+        <div className="matching on-navy" role="status" aria-live="polite">
           <RobotSpot pose="search" className="matching-robot" />
           <p className="matching-title">Checking {opportunities.length} opportunities against your profile</p>
           <p className="muted">Skills, interests, time and deadlines</p>
         </div>
       )}
 
-      <main className="main">
+      {page === 'intake' && (
+        <section className="hero-band on-navy">
+          <div className="hero-inner">
+            <p className="hero-place">Made in Toronto for U of T undergrads</p>
+            <h1>Where could you do research?</h1>
+            <p className="lede">
+              Answer a few questions and we'll match you to research programs and projects you can actually apply to,
+              explain why each one fits, and turn the deadlines into a step-by-step plan.
+            </p>
+            <p className="privacy">About 2 minutes. Your answers stay in this browser; nothing is sent anywhere.</p>
+            <HeroArt />
+          </div>
+        </section>
+      )}
+
+      <main className={`main main-${page}`}>
         {page === 'intake' && (
           <Intake
             initial={saved.profile}

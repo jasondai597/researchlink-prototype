@@ -69,7 +69,7 @@ export function Plan({
       </header>
 
       {next && (
-        <section className="first">
+        <section className="first on-navy">
           <RobotSpot pose="calendar" className="first-robot" />
           <p className="first-label">Do this first</p>
           <p className="first-title">{next.title}</p>
