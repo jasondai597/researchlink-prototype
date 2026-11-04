@@ -6,73 +6,86 @@
  */
 
 /**
- * Hero: a lab bench with the helper robot, in front of a St. George campus skyline.
- * Silhouettes are simplified and loosely inspired by (left to right) Soldiers' Tower,
- * University College, Convocation Hall, Robarts Library and the Schwartz Reisman
- * Innovation Campus (home of the Vector Institute), with the CN Tower behind.
- * Drawn for the navy hero band; colours come from CSS variables set on .hero-band.
+ * Full-width dusk skyline behind the hero. Silhouettes are simplified and loosely
+ * inspired by (left to right) Soldiers' Tower, University College, Convocation Hall,
+ * Robarts Library and the Schwartz Reisman Innovation Campus (home of the Vector
+ * Institute), with the CN Tower in the distance. Lit windows stand in for detail.
+ * Decorative: the hero text carries the meaning.
  */
-export function HeroArt() {
+export function SkylineArt() {
   return (
-    <svg className="art hero-art" viewBox="0 22 760 278" role="img" aria-labelledby="hero-art-title">
-      <title id="hero-art-title">
-        A small robot at a lab bench with a microscope, flasks and a chart, in front of a skyline of University of Toronto
-        campus buildings and the CN Tower
-      </title>
-
-      {/* far layer: city and CN Tower */}
-      <g className="art-sky-far">
-        <rect x="604" y="196" width="26" height="54" />
-        <rect x="686" y="182" width="30" height="68" />
-        <rect x="720" y="204" width="36" height="46" />
-        <path d="M700 250 L704 92 L702 92 L703.5 30 L705 92 L703 92 L707 250z" transform="translate(-2 0)" />
-        <ellipse cx="703" cy="108" rx="12" ry="6.5" />
-        <rect x="698" y="124" width="10" height="4" rx="2" />
+    <svg className="skyline" viewBox="0 0 1600 280" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      {/* distant city */}
+      <g className="sky-far">
+        <rect x="0" y="214" width="70" height="66" />
+        <rect x="78" y="188" width="46" height="92" />
+        <rect x="132" y="226" width="64" height="54" />
+        <rect x="210" y="200" width="40" height="80" />
+        <rect x="1120" y="196" width="52" height="84" />
+        <rect x="1180" y="170" width="36" height="110" />
+        <rect x="1290" y="186" width="58" height="94" />
+        <rect x="1356" y="210" width="44" height="70" />
+        <rect x="1410" y="176" width="40" height="104" />
+        <rect x="1460" y="218" width="70" height="62" />
+        <rect x="1540" y="196" width="60" height="84" />
+        <path d="M1238 280 L1243 92 L1240.5 92 L1242.5 24 L1244.5 92 L1242 92 L1247 280z" />
+        <ellipse cx="1242.5" cy="112" rx="15" ry="8" />
+        <rect x="1236" y="132" width="13" height="5" rx="2.5" />
       </g>
 
-      {/* near layer: campus */}
-      <g className="art-sky">
+      {/* campus */}
+      <g className="sky-near">
+        {/* framing blocks */}
+        <rect x="262" y="232" width="70" height="48" />
+        <rect x="340" y="218" width="54" height="62" />
+        <rect x="1104" y="228" width="80" height="52" />
         {/* Soldiers' Tower */}
-        <path d="M30 250V98h4v-10h5v10h6v-6h4v6h6v-10h5v10h4V250z" />
-        {/* University College: wings, gables and central tower */}
-        <path d="M76 250V186l14-12 14 12h44v-48h2l18-26 18 26h2v48h44l14-12 14 12V250z" />
-        {/* Convocation Hall: drum, dome, lantern, portico */}
-        <path d="M296 250V180h4a44 40 0 0 1 80 0h4V250z" />
-        <rect x="335" y="128" width="10" height="14" rx="2" />
-        <path d="M314 250V204l26-16 26 16V250z" />
+        <path d="M410 280V104h5v-12h6v12h7v-7h5v7h7v-12h6v12h5V280z" />
+        {/* University College */}
+        <path d="M466 280V206l18-14 18 14h56v-58h3l22-30 22 30h3v58h56l18-14 18 14V280z" />
+        {/* Convocation Hall */}
+        <path d="M728 280V208h6a52 46 0 0 1 104 0h6V280z" />
+        <rect x="780" y="150" width="12" height="18" rx="3" />
+        <path d="M752 280V232l34-20 34 20V280z" />
         {/* Robarts Library */}
-        <path d="M520 250 L534 176 L560 142 L586 176 L600 250z" />
-        {/* Schwartz Reisman Innovation Campus (Vector Institute): faceted tower */}
-        <path d="M614 250V114l30-10 32 10V250z" />
+        <path d="M880 280 L898 196 L930 156 L962 196 L980 280z" />
+        {/* Schwartz Reisman Innovation Campus (Vector Institute) */}
+        <path d="M1004 280V126l40-12 42 12V280z" />
       </g>
 
-      {/* window and detail cut-outs, drawn in the band colour */}
-      <g className="art-sky-cut">
-        <rect x="38" y="112" width="4" height="14" rx="2" />
-        <rect x="46" y="112" width="4" height="14" rx="2" />
-        <rect x="54" y="112" width="4" height="14" rx="2" />
-        <path d="M86 230v-18a5 5 0 0 1 10 0v18z" />
-        <path d="M108 230v-18a5 5 0 0 1 10 0v18z" />
-        <path d="M130 230v-18a5 5 0 0 1 10 0v18z" />
-        <path d="M162 250v-30a8 8 0 0 1 16 0v30z" />
-        <rect x="166" y="150" width="8" height="14" rx="4" />
-        <path d="M200 230v-18a5 5 0 0 1 10 0v18z" />
-        <path d="M222 230v-18a5 5 0 0 1 10 0v18z" />
-        <path d="M244 230v-18a5 5 0 0 1 10 0v18z" />
-        <rect x="322" y="210" width="4" height="40" />
-        <rect x="334" y="210" width="4" height="40" />
-        <rect x="346" y="210" width="4" height="40" />
-        <rect x="358" y="210" width="4" height="40" />
-        <rect x="532" y="190" width="56" height="3" />
-        <rect x="528" y="206" width="64" height="3" />
-        <rect x="524" y="222" width="72" height="3" />
-        {/* staggered "winter garden" bands */}
-        <rect x="614" y="140" width="38" height="7" />
-        <rect x="640" y="168" width="36" height="7" />
-        <rect x="614" y="196" width="46" height="7" />
-        <rect x="630" y="224" width="46" height="7" />
+      {/* lit windows */}
+      <g className="sky-window">
+        <rect x="419" y="120" width="4" height="12" rx="2" />
+        <rect x="428" y="120" width="4" height="12" rx="2" />
+        <rect x="437" y="120" width="4" height="12" rx="2" />
+        <path d="M480 262v-20a6 6 0 0 1 12 0v20z" />
+        <path d="M508 262v-20a6 6 0 0 1 12 0v20z" />
+        <path d="M536 262v-20a6 6 0 0 1 12 0v20z" />
+        <path d="M572 280v-34a11 11 0 0 1 22 0v34z" opacity="0.55" />
+        <rect x="578" y="166" width="10" height="16" rx="5" />
+        <path d="M618 262v-20a6 6 0 0 1 12 0v20z" />
+        <path d="M646 262v-20a6 6 0 0 1 12 0v20z" />
+        <path d="M674 262v-20a6 6 0 0 1 12 0v20z" />
+        <rect x="764" y="240" width="5" height="40" opacity="0.6" />
+        <rect x="778" y="240" width="5" height="40" opacity="0.6" />
+        <rect x="792" y="240" width="5" height="40" opacity="0.6" />
+        <rect x="806" y="240" width="5" height="40" opacity="0.6" />
+        <rect x="900" y="214" width="60" height="3" />
+        <rect x="895" y="232" width="70" height="3" />
+        <rect x="890" y="250" width="80" height="3" />
+        <rect x="1004" y="156" width="50" height="7" opacity="0.7" />
+        <rect x="1036" y="188" width="50" height="7" opacity="0.7" />
+        <rect x="1004" y="220" width="60" height="7" opacity="0.7" />
+        <rect x="1024" y="252" width="62" height="7" opacity="0.7" />
       </g>
+    </svg>
+  )
+}
 
+/** Hero foreground: the lab bench with the helper robot. Decorative. */
+export function BenchArt() {
+  return (
+    <svg className="art bench-art" viewBox="0 110 760 190" aria-hidden="true">
       {/* bench */}
       <rect className="art-ink" x="16" y="250" width="728" height="8" rx="3" />
       <rect className="art-ink" x="56" y="258" width="7" height="42" />

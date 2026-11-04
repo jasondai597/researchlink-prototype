@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BrandMark, HeroArt, RobotSpot } from './components/Art'
+import { BenchArt, BrandMark, RobotSpot, SkylineArt } from './components/Art'
 import { Browse } from './components/Browse'
 import { Intake } from './components/Intake'
 import { Plan } from './components/Plan'
@@ -68,6 +68,7 @@ export default function App() {
 
       {page === 'intake' && (
         <section className="hero-band on-navy">
+          <SkylineArt />
           <div className="hero-inner">
             <p className="hero-place">Made in Toronto for U of T undergrads</p>
             <h1>Where could you do research?</h1>
@@ -76,7 +77,7 @@ export default function App() {
               explain why each one fits, and turn the deadlines into a step-by-step plan.
             </p>
             <p className="privacy">About 2 minutes. Your answers stay in this browser; nothing is sent anywhere.</p>
-            <HeroArt />
+            <BenchArt />
           </div>
         </section>
       )}
