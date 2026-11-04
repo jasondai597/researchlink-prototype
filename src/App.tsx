@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { BrandMark, HeroArt, RobotSpot } from './components/Art'
+import { Browse } from './components/Browse'
 import { Intake } from './components/Intake'
 import { Plan } from './components/Plan'
 import { Results } from './components/Results'
 import { sampleOpportunities } from './data/opportunities'
+import { hiddenReason } from './lib/directory'
 import { match } from './lib/match'
 import { buildPlan } from './lib/plan'
 import { useHashRoute, useSaved } from './lib/store'
@@ -16,13 +18,21 @@ export default function App() {
   const [matching, setMatching] = useState(false)
 
   const matched = useMemo(() => (saved.profile ? match(opportunities, saved.profile, today) : null), [opportunities, saved.profile, today])
+  // Anything added from matches or the directory, as long as it's still listed.
   const selectedOps = useMemo(
-    () => opportunities.filter((o) => saved.selected.includes(o.id) && matched?.results.some((r) => r.opportunity.id === o.id)),
-    [opportunities, saved.selected, matched],
+    () => opportunities.filter((o) => saved.selected.includes(o.id) && hiddenReason(o, today) === null),
+    [opportunities, saved.selected, today],
   )
+  const toggleSelected = (id: string) =>
+    update({ selected: saved.selected.includes(id) ? saved.selected.filter((x) => x !== id) : [...saved.selected, id] })
   const tasks = useMemo(() => buildPlan(selectedOps, today), [selectedOps, today])
 
-  const page = !saved.profile ? 'intake' : route === 'results' || route === 'plan' ? route : route === 'start' ? 'intake' : 'results'
+  const page =
+    route === 'browse' || route === 'plan'
+      ? route
+      : route === 'start' || !saved.profile
+        ? 'intake'
+        : 'results'
 
   return (
     <>
@@ -31,15 +41,18 @@ export default function App() {
           <BrandMark />
           ResearchLink
         </a>
-        <nav aria-label="Steps" className="steps">
-          <a href="#/start" aria-current={page === 'intake' ? 'step' : undefined}>
-            1 · Your profile
+        <nav aria-label="Main" className="steps">
+          <a href="#/start" aria-current={page === 'intake' ? 'page' : undefined}>
+            Get matched
           </a>
-          <a href="#/results" aria-current={page === 'results' ? 'step' : undefined} aria-disabled={!saved.profile}>
-            2 · Matches
+          <a href="#/results" aria-current={page === 'results' ? 'page' : undefined} aria-disabled={!saved.profile}>
+            Matches
           </a>
-          <a href="#/plan" aria-current={page === 'plan' ? 'step' : undefined} aria-disabled={!saved.profile}>
-            3 · Action plan
+          <a href="#/browse" aria-current={page === 'browse' ? 'page' : undefined}>
+            Browse all
+          </a>
+          <a href="#/plan" aria-current={page === 'plan' ? 'page' : undefined}>
+            Action plan{saved.selected.length ? ` (${selectedOps.length})` : ''}
           </a>
         </nav>
       </header>
@@ -93,12 +106,13 @@ export default function App() {
             results={matched.results}
             excluded={matched.excluded}
             selected={saved.selected}
-            onToggle={(id) =>
-              update({ selected: saved.selected.includes(id) ? saved.selected.filter((x) => x !== id) : [...saved.selected, id] })
-            }
+            onToggle={toggleSelected}
             onEdit={() => go('start')}
             onPlan={() => go('plan')}
           />
+        )}
+        {page === 'browse' && (
+          <Browse opportunities={opportunities} today={today} selected={saved.selected} onToggle={toggleSelected} onMatch={() => go('start')} />
         )}
         {page === 'plan' && (
           <Plan

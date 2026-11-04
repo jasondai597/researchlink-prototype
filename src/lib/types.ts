@@ -22,6 +22,17 @@ export interface Profile {
   federalEligible: FederalEligibility | null // optional
 }
 
+export type ContactChannel = 'chat' | 'office-hours' | 'email'
+
+/** Who to approach informally before (or instead of) a formal application. */
+export interface Contact {
+  name: string
+  role: string
+  channel: ContactChannel // what they said they prefer
+  email: string | null
+  when: string | null // e.g. office hours
+}
+
 export interface RequiredSkill {
   skill: string
   level: SkillLevel
@@ -48,8 +59,9 @@ export interface Opportunity {
   deadline: string | null // YYYY-MM-DD; null = rolling
   applyMethod: string
   documents: DocumentType[]
+  contact: Contact | null
   url: string
-  lastVerified: string // YYYY-MM-DD
+  lastVerified: string // YYYY-MM-DD: when the listing was last checked against its source
   sample: boolean
 }
 

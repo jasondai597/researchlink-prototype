@@ -2,11 +2,12 @@ import type { Opportunity } from '../lib/types'
 
 /**
  * SAMPLE DATA. Every opportunity below is invented for the prototype: names,
- * requirements and deadlines are not real. Deadlines are set relative to today so
+ * contacts, requirements and deadlines are not real. Contact emails use the reserved
+ * example.com domain so nothing reaches a real inbox. Deadlines are set relative to today so
  * the demo always has upcoming dates. Replace with verified listings (with a source
  * URL and verification date) before showing this to real students.
  */
-type Sample = Omit<Opportunity, 'deadline' | 'lastVerified' | 'sample'> & { deadlineInDays: number | null }
+type Sample = Omit<Opportunity, 'deadline' | 'lastVerified' | 'sample'> & { deadlineInDays: number | null; verifiedDaysAgo: number }
 
 const SAMPLES: Sample[] = [
   {
@@ -30,6 +31,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 40,
     applyMethod: 'Find a supervisor, then submit the course enrolment form together.',
     documents: ['supervisor', 'transcript', 'form'],
+    contact: { name: 'Undergraduate research office', role: 'Program advisor', channel: 'office-hours', email: null, when: 'Drop-in, Tue and Thu 1–3 p.m.' },
+    verifiedDaysAgo: 3,
     url: '',
   },
   {
@@ -53,6 +56,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 95,
     applyMethod: 'Apply online with a supervisor’s support letter.',
     documents: ['cv', 'transcript', 'statement', 'supervisor', 'reference'],
+    contact: { name: 'Awards office', role: 'Program coordinator', channel: 'email', email: 'awards@example.com', when: null },
+    verifiedDaysAgo: 6,
     url: '',
   },
   {
@@ -76,6 +81,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 80,
     applyMethod: 'Department nominates you after you and a supervisor apply together.',
     documents: ['cv', 'transcript', 'supervisor', 'form'],
+    contact: { name: 'Department research coordinator', role: 'Coordinator', channel: 'email', email: 'research.coordinator@example.com', when: null },
+    verifiedDaysAgo: 12,
     url: '',
   },
   {
@@ -99,6 +106,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 25,
     applyMethod: 'Rank up to three listed projects in one online application.',
     documents: ['form', 'statement', 'transcript'],
+    contact: { name: 'Program office', role: 'Advisor', channel: 'office-hours', email: null, when: 'Drop-in, Wed 10 a.m.–12 p.m.' },
+    verifiedDaysAgo: 2,
     url: '',
   },
   {
@@ -122,6 +131,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: null,
     applyMethod: 'Request a 10-minute chat with the PhD student who runs it.',
     documents: ['cv'],
+    contact: { name: 'Maya Chen', role: 'PhD student', channel: 'chat', email: 'maya.chen@example.com', when: 'Tue and Thu, 2–4 p.m.' },
+    verifiedDaysAgo: 1,
     url: '',
   },
   {
@@ -145,6 +156,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 12,
     applyMethod: 'Email the lab coordinator with your CV and availability.',
     documents: ['cv'],
+    contact: { name: 'Daniel Okafor', role: 'Lab coordinator', channel: 'email', email: 'daniel.okafor@example.com', when: null },
+    verifiedDaysAgo: 0,
     url: '',
   },
   {
@@ -172,6 +185,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 30,
     applyMethod: 'Send a short email with your transcript and one project you’ve built.',
     documents: ['cv', 'transcript', 'statement'],
+    contact: { name: 'Priya Natarajan', role: 'Postdoc', channel: 'email', email: 'priya.natarajan@example.com', when: null },
+    verifiedDaysAgo: 4,
     url: '',
   },
   {
@@ -198,6 +213,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 21,
     applyMethod: 'Fill in the group’s interest form.',
     documents: ['cv', 'form'],
+    contact: { name: 'Leo Martins', role: 'PhD student', channel: 'chat', email: 'leo.martins@example.com', when: 'Fridays, 11 a.m.–12 p.m.' },
+    verifiedDaysAgo: 9,
     url: '',
   },
   {
@@ -221,6 +238,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 33,
     applyMethod: 'Request a chat during the PhD student’s office hours.',
     documents: ['cv', 'statement'],
+    contact: { name: 'Ana Ruiz', role: 'PhD student', channel: 'office-hours', email: 'ana.ruiz@example.com', when: 'Mon 3–5 p.m.' },
+    verifiedDaysAgo: 2,
     url: '',
   },
   {
@@ -244,6 +263,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 18,
     applyMethod: 'Apply through the unit’s job portal posting.',
     documents: ['cv', 'statement', 'reference'],
+    contact: { name: 'Sam Whitford', role: 'Research coordinator', channel: 'email', email: 'sam.whitford@example.com', when: null },
+    verifiedDaysAgo: 14,
     url: '',
   },
   {
@@ -270,6 +291,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: 15,
     applyMethod: 'Email the postdoc with a chart you’ve made.',
     documents: ['cv'],
+    contact: { name: 'Kenji Mori', role: 'Postdoc', channel: 'email', email: 'kenji.mori@example.com', when: null },
+    verifiedDaysAgo: 38,
     url: '',
   },
   {
@@ -296,6 +319,8 @@ const SAMPLES: Sample[] = [
     deadlineInDays: -5,
     applyMethod: 'Email the postdoc with a writing sample.',
     documents: ['cv', 'statement'],
+    contact: { name: 'Leila Haddad', role: 'Postdoc', channel: 'email', email: 'leila.haddad@example.com', when: null },
+    verifiedDaysAgo: 7,
     url: '',
   },
 ]
@@ -310,10 +335,10 @@ export function toISODate(d: Date): string {
 }
 
 export function sampleOpportunities(today: Date): Opportunity[] {
-  return SAMPLES.map(({ deadlineInDays, ...rest }) => ({
+  return SAMPLES.map(({ deadlineInDays, verifiedDaysAgo, ...rest }) => ({
     ...rest,
     deadline: deadlineInDays === null ? null : toISODate(new Date(today.getTime() + deadlineInDays * DAY)),
-    lastVerified: toISODate(today),
+    lastVerified: toISODate(new Date(today.getTime() - verifiedDaysAgo * DAY)),
     sample: true,
   }))
 }

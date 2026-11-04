@@ -1,5 +1,6 @@
 import { AREAS, COMP_LABELS, LEVEL_LABELS, TERM_LABELS } from '../data/catalog'
 import { daysBetween, formatDate, parseDate } from './dates'
+import { STALE_AFTER_DAYS, daysSinceVerified } from './directory'
 import type { Band, Excluded, Experience, MatchResult, Opportunity, Profile } from './types'
 
 /**
@@ -20,6 +21,7 @@ export function exclusionReason(o: Opportunity, p: Profile, today: Date): string
   if (o.deadline && daysBetween(today, parseDate(o.deadline)) < 0) {
     return `Deadline passed on ${formatDate(o.deadline)}`
   }
+  if (daysSinceVerified(o, today) > STALE_AFTER_DAYS) return `Not verified in the last ${STALE_AFTER_DAYS} days, so it may be closed`
   if (p.year < o.minYear) return `Open from year ${o.minYear}; you're in year ${p.year}`
   if (o.maxYear !== null && p.year > o.maxYear) return `Only for students up to year ${o.maxYear}`
   if (p.terms.length && !o.terms.some((t) => p.terms.includes(t))) {
