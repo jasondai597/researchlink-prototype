@@ -6,7 +6,7 @@ import { Plan } from './components/Plan'
 import { Results } from './components/Results'
 import { StudyPanel } from './components/StudyPanel'
 import { sampleOpportunities } from './data/opportunities'
-import { PHOTO_ALT, PHOTO_CREDIT } from './data/site'
+import { PHOTO_ALT, PHOTO_CREDIT, PHOTO_SOURCE_URL } from './data/site'
 import { hiddenReason } from './lib/directory'
 import { match } from './lib/match'
 import { buildPlan } from './lib/plan'
@@ -206,7 +206,13 @@ export default function App() {
       <footer className="foot">
         <div className="foot-inner">
           <p>Made in Toronto by U of T students. Not affiliated with or endorsed by the University of Toronto.</p>
-          <p>Campus photo: {PHOTO_CREDIT}</p>
+          <p>
+            Campus photo:{' '}
+            <a href={PHOTO_SOURCE_URL} target="_blank" rel="noopener noreferrer">
+              {PHOTO_CREDIT}
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </p>
           <button className="link" type="button" onClick={clearAnswers}>
             Clear my answers
           </button>
