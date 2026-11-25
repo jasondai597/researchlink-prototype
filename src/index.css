@@ -128,7 +128,7 @@ a { color: var(--link); }
   max-width: 1240px; margin: 0 auto; min-height: 52px; padding: 0 var(--gutter);
   display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap;
 }
-.brand { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; color: var(--text); text-decoration: none; letter-spacing: -0.01em; }
+.brand { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 16px; font-weight: 600; color: var(--text); text-decoration: none; letter-spacing: -0.01em; }
 .brand-icon { color: var(--brand-icon); flex: none; }
 .tabs { display: flex; gap: 4px; }
 .tabs a {

@@ -130,14 +130,27 @@ function icsEscape(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
 }
 
-function fold(line: string): string {
+const utf8 = new TextEncoder()
+
+/**
+ * RFC 5545 limits lines to 75 octets (not characters), continued with a leading
+ * space. Count UTF-8 bytes and never split a character, so ’ or é can't break a file.
+ */
+export function fold(line: string): string {
   const out: string[] = []
-  let rest = line
-  while (rest.length > 74) {
-    out.push(rest.slice(0, 74))
-    rest = ' ' + rest.slice(74)
+  let current = ''
+  let bytes = 0
+  for (const ch of line) {
+    const size = utf8.encode(ch).length
+    if (bytes + size > 75) {
+      out.push(current)
+      current = ' '
+      bytes = 1
+    }
+    current += ch
+    bytes += size
   }
-  out.push(rest)
+  out.push(current)
   return out.join('\r\n')
 }
 

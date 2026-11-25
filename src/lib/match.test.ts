@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { sampleOpportunities } from '../data/opportunities'
 import { WANT_TO_LEARN_BONUS, groupOf, match } from './match'
 import { draftMessage, mailtoHref } from './outreach'
-import { buildPlan, googleCalendarUrl, tasksFor, toICS } from './plan'
+import { buildPlan, fold, googleCalendarUrl, tasksFor, toICS } from './plan'
 import type { Profile } from './types'
 
 const TODAY = new Date(2026, 10, 4) // Nov 4, 2026
@@ -176,6 +176,18 @@ describe('calendar export', () => {
     expect(b.sort()).toEqual(a.sort())
     // The per-application file and the whole-plan file use the same UID for the same step.
     expect(uids(toICS(plan, titleFor))).toEqual(expect.arrayContaining(a))
+  })
+
+  it('folds lines at 75 bytes without splitting multi-byte characters', () => {
+    const bytes = (l: string) => new TextEncoder().encode(l).length
+    const long = 'DESCRIPTION:' + 'Send a short email with one project you’ve built. Café ’’’ '.repeat(6)
+    const lines = fold(long).split('\r\n')
+    expect(lines.length).toBeGreaterThan(1)
+    expect(lines.every((l) => bytes(l) <= 75)).toBe(true)
+    expect(lines.slice(1).every((l) => l.startsWith(' '))).toBe(true)
+    expect(lines.map((l, i) => (i ? l.slice(1) : l)).join('')).toBe(long) // unfolds back exactly
+    const ics = toICS(buildPlan(ops, TODAY), titleFor)
+    expect(ics.split('\r\n').every((l) => bytes(l) <= 75)).toBe(true)
   })
 
   it('builds a prefilled all-day Google Calendar link', () => {
