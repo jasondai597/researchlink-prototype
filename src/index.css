@@ -92,9 +92,10 @@ body {
   margin: 0;
   color: var(--text);
   background:
-    radial-gradient(ellipse 75% 620px at 50% 0, var(--glow) 0%, color-mix(in srgb, var(--glow) 45%, transparent) 45%, transparent 100%),
-    radial-gradient(ellipse 45% 420px at 100% 30%, var(--glow-side), transparent 70%),
-    linear-gradient(180deg, var(--bg) 0, var(--bg) calc(100% - 640px), var(--bg-end) 100%);
+    radial-gradient(ellipse 120% 1100px at 50% 0, var(--glow) 0%, color-mix(in srgb, var(--glow) 55%, transparent) 40%, transparent 100%),
+    radial-gradient(ellipse 60% 900px at 100% 35%, var(--glow-side), transparent 75%),
+    radial-gradient(ellipse 60% 900px at 0% 60%, var(--glow-side), transparent 75%),
+    linear-gradient(180deg, var(--bg) 0, var(--bg) calc(100% - 1000px), var(--bg-end) 100%);
   background-color: var(--bg);
   font: 17px/1.47 var(--font);
   letter-spacing: -0.01em;
