@@ -125,17 +125,27 @@ function MatchCard({ r, checked, onToggle }: { r: MatchResult; checked: boolean;
       <p className={`deadline${soon ? ' deadline-soon' : ''}`}>{deadlineText(r)}</p>
 
       <div className="ledger">
-        <ul className="fits" aria-label="Why it fits">
-          {r.reasons.map((x) => (
-            <li key={x}>{x}</li>
-          ))}
-        </ul>
-        {r.gaps.length > 0 && (
-          <ul className="gaps" aria-label="Gaps">
-            {r.gaps.map((x) => (
+        <div>
+          <p className="ledger-label ledger-fits" id={`fits-${o.id}`}>
+            Why it fits
+          </p>
+          <ul className="fits" aria-labelledby={`fits-${o.id}`}>
+            {r.reasons.map((x) => (
               <li key={x}>{x}</li>
             ))}
           </ul>
+        </div>
+        {r.gaps.length > 0 && (
+          <div>
+            <p className="ledger-label ledger-gaps" id={`gaps-${o.id}`}>
+              What's missing or worth checking
+            </p>
+            <ul className="gaps" aria-labelledby={`gaps-${o.id}`}>
+              {r.gaps.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
