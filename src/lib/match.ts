@@ -11,6 +11,8 @@ import type { Band, Excluded, Experience, MatchResult, Opportunity, Profile } fr
 export const WEIGHTS = { skills: 0.4, interest: 0.3, time: 0.2, experience: 0.1 }
 export const COMP_MISMATCH_FACTOR = 0.85
 export const BANDS = { strong: 0.75, possible: 0.5 }
+/** Added once when a project teaches a skill the student wants to learn. The score is capped at 1. */
+export const WANT_TO_LEARN_BONUS = 0.05
 
 const EXPERIENCE_RANK: Record<Experience, number> = { none: 0, coursework: 1, research: 2 }
 const areaLabel = (id: string) => AREAS.find((a) => a.id === id)?.label ?? id
@@ -105,6 +107,9 @@ export function scoreOne(o: Opportunity, p: Profile, today: Date, idf: Map<strin
       } else if (have === r.level - 1 && have > 0) {
         total += 0.5
         gaps.push(`${r.skill}: asks for "${LEVEL_LABELS[r.level]}", you said "${LEVEL_LABELS[have as 1 | 2 | 3]}"`)
+      } else if (p.wantToLearn.includes(r.skill)) {
+        // Wanting to learn a skill never counts toward a requirement.
+        gaps.push(`${r.skill}: asks for "${LEVEL_LABELS[r.level]}"; you want to learn it`)
       } else {
         gaps.push(`${r.skill}: not on your list yet`)
       }
@@ -114,7 +119,10 @@ export function scoreOne(o: Opportunity, p: Profile, today: Date, idf: Map<strin
   } else {
     reasons.push('No specific skills required')
   }
-  if (o.learnableSkills.length) reasons.push(`You'll learn on the job: ${o.learnableSkills.join(', ')}`)
+  const wanted = o.learnableSkills.filter((s) => p.wantToLearn.includes(s))
+  for (const s of wanted) reasons.push(`You want to learn ${s}, and this project teaches it on the job`)
+  const otherLearnable = o.learnableSkills.filter((s) => !wanted.includes(s))
+  if (otherLearnable.length) reasons.push(`You'll learn on the job: ${otherLearnable.join(', ')}`)
 
   // Interest: area overlap, blended with free-text similarity when the student wrote something.
   const sharedAreas = o.areas.filter((a) => p.interests.includes(a))
@@ -160,6 +168,7 @@ export function scoreOne(o: Opportunity, p: Profile, today: Date, idf: Map<strin
   }
   if (o.federalOnly && p.federalEligible !== 'yes') gaps.push('Check the federal eligibility rules before applying')
   if (o.minGpa !== null && p.gpa === null) gaps.push(`Usually expects a GPA of ${o.minGpa.toFixed(1)}+`)
+  if (wanted.length) score = Math.min(1, score + WANT_TO_LEARN_BONUS)
 
   const daysToDeadline = o.deadline ? daysBetween(today, parseDate(o.deadline)) : null
   return {

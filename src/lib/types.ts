@@ -11,7 +11,8 @@ export interface Profile {
   program: string
   experience: Experience
   experienceTypes: string[]
-  skills: Record<string, SkillLevel>
+  skills: Record<string, SkillLevel> // skills the student has used; "Not yet" = absent
+  wantToLearn: string[] // skills they'd like to learn; never also in `skills`
   hoursPerWeek: number
   terms: Term[]
   goals: Compensation[]

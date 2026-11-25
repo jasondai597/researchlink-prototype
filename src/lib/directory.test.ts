@@ -34,7 +34,7 @@ describe('directory freshness', () => {
   })
 
   it('keeps stale listings out of matches too', () => {
-    const p: Profile = { year: 3, program: '', experience: 'coursework', experienceTypes: [], skills: { R: 3, 'Data visualization': 3 }, hoursPerWeek: 10, terms: ['fall', 'winter'], goals: [], purpose: 'experience', interests: ['env'], interestText: 'climate charts', gpa: null, federalEligible: null }
+    const p: Profile = { year: 3, program: '', experience: 'coursework', experienceTypes: [], skills: { R: 3, 'Data visualization': 3 }, wantToLearn: [], hoursPerWeek: 10, terms: ['fall', 'winter'], goals: [], purpose: 'experience', interests: ['env'], interestText: 'climate charts', gpa: null, federalEligible: null }
     const { excluded } = match(ops, p, TODAY)
     expect(excluded.find((e) => e.opportunity.id === 'climate-viz')?.why).toMatch(/Not verified/)
   })

@@ -7,14 +7,42 @@ export interface Saved {
   profile: Profile | null
   selected: string[] // opportunity ids added to the plan
   done: string[] // task ids checked off
+  calendared: string[] // opportunity ids whose steps were downloaded as .ics
 }
 
-const EMPTY: Saved = { profile: null, selected: [], done: [] }
+export const EMPTY: Saved = { profile: null, selected: [], done: [], calendared: [] }
+
+const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
+
+/**
+ * Bring a profile saved by an older version up to date. Profiles saved before
+ * "Want to learn" existed have no `wantToLearn`; a skill is either rated or wanted,
+ * never both, so rated skills win.
+ */
+export function normalizeProfile(p: Profile): Profile {
+  const skills = p.skills && typeof p.skills === 'object' ? p.skills : {}
+  return { ...p, skills, wantToLearn: strings(p.wantToLearn).filter((s) => !(s in skills)) }
+}
+
+/** Parse what's in localStorage. Pure, so it can be tested without a browser. */
+export function parseSaved(raw: string | null): Saved {
+  if (!raw) return EMPTY
+  try {
+    const data = JSON.parse(raw) as Partial<Saved>
+    return {
+      profile: data.profile ? normalizeProfile(data.profile) : null,
+      selected: strings(data.selected),
+      done: strings(data.done),
+      calendared: strings(data.calendared),
+    }
+  } catch {
+    return EMPTY
+  }
+}
 
 function read(): Saved {
   try {
-    const raw = localStorage.getItem(KEY)
-    return raw ? { ...EMPTY, ...JSON.parse(raw) } : EMPTY
+    return parseSaved(localStorage.getItem(KEY))
   } catch {
     return EMPTY
   }

@@ -28,8 +28,13 @@ action plan with deadlines. Vite + React + TypeScript, no backend.
   deadline.
 - **Contacts:** sample contacts must use `example.com` emails. The app never sends
   messages; it only drafts them.
-- **Art:** illustrations are in `src/components/Art.tsx`. No university crests, logos
-  or wordmarks.
+- **Art:** no illustrations. The brand mark is the stroke icon in
+  `src/components/Icon.tsx`; the homepage photo is `public/campus.jpg`, credited via
+  `PHOTO_CREDIT` in `src/data/site.ts`. No university crests, logos or wordmarks.
+- **Style:** design tokens (light and dark) live at the top of `src/index.css`. Use
+  them rather than raw colours; check new text/background pairs reach 4.5:1.
+- **Study mode:** `src/lib/study.ts` is off unless `?study=1`. It logs to
+  localStorage only; never send it anywhere.
 - **UI:** keep it accessible: real form controls, visible focus, labels on every
   input, works at 390px wide, light and dark mode.
 - `paper-prototype-reference/` is a separate static file for the CSC318 paper

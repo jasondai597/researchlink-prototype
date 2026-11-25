@@ -1,5 +1,4 @@
 import { AREAS, COMP_LABELS, DOC_LABELS } from '../data/catalog'
-import { RobotSpot } from './Art'
 import { formatDate } from '../lib/dates'
 import { groupOf } from '../lib/match'
 import type { Band, Excluded, MatchResult, Profile } from '../lib/types'
@@ -17,6 +16,15 @@ function deadlineText(r: MatchResult) {
   if (!o.deadline) return 'Rolling: apply any time'
   const d = r.daysToDeadline ?? 0
   return `Closes ${formatDate(o.deadline)} · ${d === 0 ? 'today' : `in ${d} day${d === 1 ? '' : 's'}`}`
+}
+
+function BandTag({ band }: { band: Band }) {
+  return (
+    <span className={`band band-${band}`}>
+      <span className="dot" aria-hidden="true" />
+      {BAND_LABEL[band]}
+    </span>
+  )
 }
 
 export function Results({
@@ -38,16 +46,16 @@ export function Results({
 }) {
   const areas = profile.interests.map((id) => AREAS.find((a) => a.id === id)?.label).filter(Boolean)
   return (
-    <div className="results">
-      <header className="results-head">
-        <RobotSpot pose="search" className="head-robot" />
+    <div className="results page">
+      <header className="page-head">
         <h1>Your matches</h1>
-        <p className="muted">
+        <p className="page-sub">
           Year {profile.year}
           {profile.program ? `, ${profile.program}` : ''} · {profile.hoursPerWeek} h/week
-          {areas.length ? ` · ${areas.join(', ')}` : ''} ·{' '}
+          {areas.length ? ` · ${areas.join(', ')}` : ''}
+          {profile.wantToLearn.length ? ` · Want to learn: ${profile.wantToLearn.join(', ')}` : ''} ·{' '}
           <button className="link" type="button" onClick={onEdit}>
-            Edit answers
+            Edit answers ›
           </button>
         </p>
         <p className="how">
@@ -60,10 +68,10 @@ export function Results({
         const list = results.filter((r) => groupOf(r) === g.key)
         if (!list.length) return null
         return (
-          <section key={g.key} className="group">
+          <section key={g.key} className="group-section">
             <h2>{g.title}</h2>
-            <p className="muted">{g.sub}</p>
-            <ul className="matches">
+            <p className="section-sub">{g.sub}</p>
+            <ul className="cards">
               {list.map((r) => (
                 <MatchCard key={r.opportunity.id} r={r} checked={selected.includes(r.opportunity.id)} onToggle={onToggle} />
               ))}
@@ -74,9 +82,7 @@ export function Results({
 
       {excluded.length > 0 && (
         <details className="excluded">
-          <summary>
-            {excluded.length} hidden because you can't apply right now
-          </summary>
+          <summary>{excluded.length} hidden because you can't apply right now</summary>
           <ul>
             {excluded.map((e) => (
               <li key={e.opportunity.id}>
@@ -105,7 +111,7 @@ function MatchCard({ r, checked, onToggle }: { r: MatchResult; checked: boolean;
   const o = r.opportunity
   const soon = r.daysToDeadline !== null && r.daysToDeadline <= 14
   return (
-    <li className={`match band-${r.band}`}>
+    <li className="card match">
       <div className="match-top">
         <div>
           <p className="kind">
@@ -113,7 +119,7 @@ function MatchCard({ r, checked, onToggle }: { r: MatchResult; checked: boolean;
           </p>
           <h3>{o.title}</h3>
         </div>
-        <span className={`band band-${r.band}`}>{BAND_LABEL[r.band]}</span>
+        <BandTag band={r.band} />
       </div>
       <p className="summary">{o.summary}</p>
       <p className={`deadline${soon ? ' deadline-soon' : ''}`}>{deadlineText(r)}</p>
@@ -138,7 +144,7 @@ function MatchCard({ r, checked, onToggle }: { r: MatchResult; checked: boolean;
           <span className="muted">You'll need:</span> {o.documents.map((d) => DOC_LABELS[d]).join(', ')}
         </p>
         <label className={`add${checked ? ' add-on' : ''}`}>
-          <input type="checkbox" checked={checked} onChange={() => onToggle(o.id)} />
+          <input className="vh" type="checkbox" checked={checked} onChange={() => onToggle(o.id)} />
           <span>{checked ? 'Added to plan' : 'Add to my plan'}</span>
         </label>
       </div>

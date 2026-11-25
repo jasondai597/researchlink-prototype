@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { sampleOpportunities } from '../data/opportunities'
-import { groupOf, match } from './match'
+import { WANT_TO_LEARN_BONUS, groupOf, match } from './match'
 import { draftMessage, mailtoHref } from './outreach'
-import { buildPlan, toICS } from './plan'
+import { buildPlan, googleCalendarUrl, tasksFor, toICS } from './plan'
 import type { Profile } from './types'
 
 const TODAY = new Date(2026, 10, 4) // Nov 4, 2026
@@ -16,6 +16,7 @@ function profile(over: Partial<Profile> = {}): Profile {
     experience: 'coursework',
     experienceTypes: [],
     skills: { Python: 2, Statistics: 3, 'Machine learning': 2 },
+    wantToLearn: [],
     hoursPerWeek: 10,
     terms: ['winter', 'summer'],
     goals: [],
@@ -86,6 +87,42 @@ describe('scoring', () => {
   })
 })
 
+describe('want to learn', () => {
+  it('never counts a wanted skill toward a requirement', () => {
+    const base = match(ops, profile({ skills: { Statistics: 3, 'Machine learning': 2 } }), TODAY).results.find((r) => r.opportunity.id === 'uq-ml')!
+    const wants = match(ops, profile({ skills: { Statistics: 3, 'Machine learning': 2 }, wantToLearn: ['Python'] }), TODAY).results.find(
+      (r) => r.opportunity.id === 'uq-ml',
+    )!
+    expect(wants.parts.skills).toBe(base.parts.skills)
+    expect(wants.score).toBe(base.score) // uq-ml doesn't teach Python, so no bonus either
+    expect(wants.gaps).toContain('Python: asks for "Can use it"; you want to learn it')
+    expect(wants.reasons).toContain('You meet 2 of 3 required skills')
+  })
+
+  it('explains the match when a project teaches a skill the student wants', () => {
+    const p = profile({ year: 1, experience: 'none', skills: {}, wantToLearn: ['Experiment design'], interests: ['psych'], interestText: '', terms: ['fall'] })
+    const r = match(ops, p, TODAY).results.find((x) => x.opportunity.id === 'memory-study')!
+    expect(r.reasons).toContain('You want to learn Experiment design, and this project teaches it on the job')
+    expect(r.reasons.some((x) => x.startsWith("You'll learn on the job:") && x.includes('Experiment design'))).toBe(false)
+    const without = match(ops, { ...p, wantToLearn: [] }, TODAY).results.find((x) => x.opportunity.id === 'memory-study')!
+    expect(r.score).toBeCloseTo(Math.min(1, without.score + WANT_TO_LEARN_BONUS))
+  })
+
+  it('adds the bonus once and caps the score at 1', () => {
+    // A perfect fit for the beginner program already scores 1; wanting two skills it teaches can't push it over.
+    const p = profile({ year: 1, experience: 'none', skills: {}, interests: ['psych'], interestText: '', terms: ['fall'], hoursPerWeek: 10 })
+    const perfect = match(ops, p, TODAY).results.find((x) => x.opportunity.id === 'first-year-program')!
+    expect(perfect.score).toBeCloseTo(1)
+    expect(perfect.score + WANT_TO_LEARN_BONUS).toBeGreaterThan(1) // so the cap is what keeps it at 1
+    const wants = match(ops, { ...p, wantToLearn: ['Literature review', 'Survey design'] }, TODAY).results.find(
+      (x) => x.opportunity.id === 'first-year-program',
+    )!
+    expect(wants.score).toBe(1)
+    expect(wants.band).toBe('strong')
+    expect(wants.reasons.filter((x) => x.startsWith('You want to learn'))).toHaveLength(2)
+  })
+})
+
 describe('action plan', () => {
   it('schedules backwards from the deadline and shares CV/transcript across applications', () => {
     const tasks = buildPlan([byId('uq-ml'), byId('summer-award')], TODAY)
@@ -108,6 +145,47 @@ describe('action plan', () => {
     expect(ics.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true)
     expect(ics).toContain('DTSTART;VALUE=DATE:')
     expect(ics.trim().endsWith('END:VCALENDAR')).toBe(true)
+  })
+})
+
+describe('calendar export', () => {
+  const titleFor = (id: string) => byId(id).title
+  const uids = (ics: string) => ics.split('\r\n').filter((l) => l.startsWith('UID:'))
+  const plan = buildPlan([byId('uq-ml'), byId('summer-award'), byId('memory-study')], TODAY)
+
+  it("exports only one application's steps, including merged shared steps", () => {
+    const mine = tasksFor(plan, 'memory-study')
+    expect(mine.length).toBeGreaterThan(0)
+    expect(mine.every((t) => t.forIds.includes('memory-study'))).toBe(true)
+    const cv = mine.find((t) => t.id === 'shared-cv')!
+    expect(cv.forIds.sort()).toEqual(['memory-study', 'summer-award', 'uq-ml']) // merged step is included
+    expect(mine.some((t) => t.id === 'uq-ml-submit')).toBe(false)
+
+    const ics = toICS(mine, titleFor)
+    expect(uids(ics)).toHaveLength(mine.length)
+    expect(ics).toContain('UID:shared-cv@researchlink')
+    expect(ics).toContain('UID:memory-study-submit@researchlink')
+    expect(ics).not.toContain('UID:uq-ml-submit@researchlink')
+  })
+
+  it('keeps UIDs stable across exports, so re-importing updates instead of duplicating', () => {
+    const later = new Date(2026, 10, 20) // after some ideal dates have passed, so due dates move
+    const again = buildPlan([byId('uq-ml'), byId('summer-award'), byId('memory-study')], later)
+    const a = uids(toICS(tasksFor(plan, 'uq-ml'), titleFor, TODAY))
+    const b = uids(toICS(tasksFor(again, 'uq-ml'), titleFor, later))
+    expect(b.sort()).toEqual(a.sort())
+    // The per-application file and the whole-plan file use the same UID for the same step.
+    expect(uids(toICS(plan, titleFor))).toEqual(expect.arrayContaining(a))
+  })
+
+  it('builds a prefilled all-day Google Calendar link', () => {
+    const t = tasksFor(plan, 'uq-ml').find((x) => x.id === 'uq-ml-submit')!
+    const url = new URL(googleCalendarUrl(t, titleFor))
+    expect(url.origin + url.pathname).toBe('https://calendar.google.com/calendar/render')
+    expect(url.searchParams.get('action')).toBe('TEMPLATE')
+    expect(url.searchParams.get('text')).toBe('Submit your application')
+    expect(url.searchParams.get('dates')).toBe('20261202/20261203')
+    expect(url.searchParams.get('details')).toContain('For: Uncertainty estimates for ML models (sample)')
   })
 })
 

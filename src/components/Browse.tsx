@@ -30,17 +30,17 @@ export function Browse({
   const hiddenCount = hidden['past-deadline'] + hidden.stale
 
   return (
-    <div className="directory">
-      <header className="dir-head">
+    <div className="directory page">
+      <header className="page-head">
         <h1>All open opportunities</h1>
-        <p className="lede-sm">
+        <p className="page-sub">
           Every program and project we list, in one place. Each one shows when it was last checked against its source.
           Anything past its deadline or not checked in {STALE_AFTER_DAYS} days is taken down automatically.
         </p>
-        <p className="muted">
+        <p className="page-sub">
           Not sure what fits?{' '}
           <button className="link" type="button" onClick={onMatch}>
-            Get matched instead
+            Get matched instead ›
           </button>
         </p>
       </header>
@@ -149,7 +149,7 @@ export function Browse({
                     {o.deadline ? `Closes ${formatDate(o.deadline)}` : 'Rolling'}
                   </p>
                   <label className={`add${added ? ' add-on' : ''}`}>
-                    <input type="checkbox" checked={added} onChange={() => onToggle(o.id)} />
+                    <input className="vh" type="checkbox" checked={added} onChange={() => onToggle(o.id)} />
                     <span>{added ? 'Added to plan' : 'Add to my plan'}</span>
                   </label>
                 </div>
@@ -160,7 +160,7 @@ export function Browse({
       ) : (
         <div className="empty">
           <p>No open listings match those filters.</p>
-          <button className="btn" type="button" onClick={() => setF(NO_FILTERS)}>
+          <button className="btn btn-secondary" type="button" onClick={() => setF(NO_FILTERS)}>
             Clear filters
           </button>
         </div>

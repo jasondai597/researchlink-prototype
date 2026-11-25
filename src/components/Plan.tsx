@@ -1,55 +1,82 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { formatDate } from '../lib/dates'
 import { CHANNEL_LABELS, draftMessage, draftSubject, mailtoHref } from '../lib/outreach'
-import { groupTasks, toICS, type Task } from '../lib/plan'
+import { ICS_FILENAME, googleCalendarUrl, groupTasks, tasksFor, toICS, type Task } from '../lib/plan'
+import { logStudy } from '../lib/study'
 import type { ContactChannel, Opportunity, Profile } from '../lib/types'
-import { RobotSpot } from './Art'
+
+const ALL = 'all'
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+
+function downloadICS(text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/calendar;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = ICS_FILENAME
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  // Some browsers start the download asynchronously; don't pull the file out from under them.
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}
 
 export function Plan({
   selected,
   tasks,
   done,
+  calendared,
   today,
   profile,
   onToggleDone,
+  onExported,
   onBack,
   onBrowse,
 }: {
   selected: Opportunity[]
   tasks: Task[]
   done: string[]
+  calendared: string[]
   today: Date
   profile: Profile | null
   onToggleDone: (id: string) => void
+  onExported: (ids: string[]) => void
   onBack: () => void
   onBrowse: () => void
 }) {
+  // One confirmation at a time, shown in the live region next to the button that made it.
+  const [notice, setNotice] = useState<{ key: string; text: string } | null>(null)
+  const timer = useRef<number | undefined>(undefined)
   const titleFor = (id: string) => selected.find((o) => o.id === id)?.title ?? id
   const next = tasks.find((t) => !done.includes(t.id))
   const groups = groupTasks(tasks, today)
 
-  function download() {
-    const blob = new Blob([toICS(tasks, titleFor)], { type: 'text/calendar' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'research-action-plan.ics'
-    a.click()
-    URL.revokeObjectURL(a.href)
+  function exportTasks(key: string, list: Task[], label: string, ids: string[]) {
+    downloadICS(toICS(list, titleFor))
+    logStudy('calendar_export', key)
+    onExported(ids)
+    const text = `✓ ${plural(list.length, 'step')} for ${label} saved to ${ICS_FILENAME}. Open the file to add them to Apple Calendar or Outlook; in Google Calendar use Settings › Import.`
+    // Clear first so a repeat export is announced again.
+    setNotice(null)
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setNotice({ key, text }), 50)
   }
+
+  const noticeFor = (key: string) => (notice?.key === key ? notice.text : '')
 
   if (!selected.length) {
     return (
-      <div className="plan">
-        <h1>Your action plan</h1>
+      <div className="plan page">
+        <header className="page-head">
+          <h1>Your action plan</h1>
+        </header>
         <div className="empty">
-          <RobotSpot pose="wave" className="empty-robot" />
           <p>Nothing in your plan yet. Add opportunities from your matches or the directory, and your steps and deadlines show up here.</p>
           <div className="row">
             <button className="btn btn-primary" type="button" onClick={onBack}>
               Get matched
             </button>
-            <button className="btn" type="button" onClick={onBrowse}>
-              Browse all opportunities
+            <button className="link" type="button" onClick={onBrowse}>
+              Browse all opportunities ›
             </button>
           </div>
         </div>
@@ -57,84 +84,127 @@ export function Plan({
     )
   }
 
+  const doneCount = done.filter((d) => tasks.some((t) => t.id === d)).length
+
   return (
-    <div className="plan">
-      <header className="plan-head">
+    <div className="plan page">
+      <header className="page-head plan-head">
         <div>
           <h1>Your action plan</h1>
-          <p className="muted">
-            {tasks.length} steps for {selected.length} application{selected.length === 1 ? '' : 's'} · {done.filter((d) => tasks.some((t) => t.id === d)).length} done ·{' '}
+          <p className="page-sub">
+            {plural(tasks.length, 'step')} for {plural(selected.length, 'application')} · {doneCount} done ·{' '}
             <button className="link" type="button" onClick={onBack}>
-              Change what's in my plan
+              Change what's in my plan ›
             </button>
           </p>
         </div>
         <div className="plan-actions">
-          <button className="btn" type="button" onClick={download}>
-            Add to calendar (.ics)
-          </button>
-          <button className="btn" type="button" onClick={() => window.print()}>
-            Print
-          </button>
+          <div className="row">
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={() => exportTasks(ALL, tasks, plural(selected.length, 'application'), selected.map((o) => o.id))}
+            >
+              Add all to calendar
+            </button>
+            <button className="link" type="button" onClick={() => window.print()}>
+              Print ›
+            </button>
+          </div>
+          <p className="cal-notice" role="status" aria-live="polite">
+            {noticeFor(ALL)}
+          </p>
         </div>
       </header>
 
       {next && (
-        <section className="first on-navy">
-          <RobotSpot pose="calendar" className="first-robot" />
+        <section className="first" aria-labelledby="first-title">
           <p className="first-label">Do this first</p>
-          <p className="first-title">{next.title}</p>
+          <p className="first-title" id="first-title">
+            {next.title}
+          </p>
           <p>
             {next.late ? 'Today: the ideal date has already passed.' : `By ${formatDate(next.due)}.`} {next.detail}
           </p>
         </section>
       )}
 
-      <section className="deadlines">
-        <h2>Deadlines</h2>
-        <ul>
+      <section className="deadlines" aria-labelledby="deadlines-h">
+        <h2 id="deadlines-h">Deadlines</h2>
+        <p className="section-sub">Add one application's steps at a time, or use “Add all to calendar” above.</p>
+        <ul className="rows">
           {selected
             .slice()
             .sort((a, b) => (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999'))
-            .map((o) => (
-              <li key={o.id}>
-                <span className="dl-date">{o.deadline ? formatDate(o.deadline) : 'Rolling'}</span>
-                <span>{o.title}</span>
-              </li>
-            ))}
+            .map((o) => {
+              const mine = tasksFor(tasks, o.id)
+              const inCal = calendared.includes(o.id)
+              return (
+                <li key={o.id} className="dl-row">
+                  <span className="dl-date">{o.deadline ? formatDate(o.deadline) : 'Rolling'}</span>
+                  <span className="dl-main">
+                    <span className="dl-title">{o.title}</span>
+                    <span className="dl-meta">
+                      {plural(mine.length, 'step')}
+                      {inCal && <span className="dl-status"> · ✓ In your calendar</span>}
+                    </span>
+                  </span>
+                  <button className="btn btn-secondary dl-btn" type="button" onClick={() => exportTasks(o.id, mine, o.title, [o.id])}>
+                    {inCal ? 'Add again' : 'Add to calendar'}
+                    <span className="sr-only">: {o.title}</span>
+                  </button>
+                  <p className="cal-notice dl-notice" role="status" aria-live="polite">
+                    {noticeFor(o.id)}
+                  </p>
+                </li>
+              )
+            })}
         </ul>
       </section>
 
-      <h2>Timeline</h2>
-      <ol className="timeline">
-        {groups.map((g) => (
-          <li key={g.label} className="tl-group">
-            <h3>{g.label}</h3>
-            <ul>
-              {g.tasks.map((t) => {
-                const isDone = done.includes(t.id)
-                return (
-                  <li key={t.id} className={`task${isDone ? ' task-done' : ''}${t.late && !isDone ? ' task-late' : ''}`}>
-                    <label>
-                      <input type="checkbox" checked={isDone} onChange={() => onToggleDone(t.id)} />
-                      <span className="task-body">
-                        <span className="task-title">{t.title}</span>
-                        <span className="task-due">
-                          {formatDate(t.due)}
-                          {t.late && !isDone ? ' · ideal date passed, do it now' : ''}
+      <section aria-labelledby="timeline-h">
+        <h2 id="timeline-h">Timeline</h2>
+        <ol className="timeline">
+          {groups.map((g) => (
+            <li key={g.label} className="tl-group">
+              <h3>{g.label}</h3>
+              <ul>
+                {g.tasks.map((t) => {
+                  const isDone = done.includes(t.id)
+                  return (
+                    <li key={t.id} className={`task${isDone ? ' task-done' : ''}${t.late && !isDone ? ' task-late' : ''}`}>
+                      <label className="task-check">
+                        <input type="checkbox" checked={isDone} onChange={() => onToggleDone(t.id)} />
+                        <span className="task-body">
+                          <span className="task-title">{t.title}</span>
+                          <span className="task-due">
+                            {formatDate(t.due)}
+                            {t.late && !isDone ? ' · ideal date passed, do it now' : ''}
+                          </span>
+                          <span className="task-detail">{t.detail}</span>
+                          <span className="task-for">For: {t.forIds.map(titleFor).join('; ')}</span>
                         </span>
-                        <span className="task-detail">{t.detail}</span>
-                        <span className="task-for">For: {t.forIds.map(titleFor).join('; ')}</span>
-                      </span>
-                    </label>
-                    {t.outreach && <Outreach o={selected.find((o) => o.id === t.outreach)!} profile={profile} />}
-                  </li>
-                )
-              })}
-            </ul>
-          </li>
-        ))}
-      </ol>
+                      </label>
+                      <p className="task-links">
+                        <a
+                          className="link"
+                          href={googleCalendarUrl(t, titleFor)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => logStudy('google_calendar_click', t.id)}
+                        >
+                          Google Calendar ›<span className="sr-only">: add “{t.title}” (opens in a new tab)</span>
+                        </a>
+                      </p>
+                      {t.outreach && <Outreach o={selected.find((o) => o.id === t.outreach)!} profile={profile} />}
+                    </li>
+                  )
+                })}
+              </ul>
+            </li>
+          ))}
+        </ol>
+      </section>
     </div>
   )
 }
@@ -182,16 +252,16 @@ function Outreach({ o, profile }: { o: Opportunity; profile: Profile | null }) {
           ))}
         </ul>
         <label className="field">
-          Message draft{profile ? '' : ' (fill in the [brackets], or complete your profile first)'}
+          <span className="field-label">Message draft{profile ? '' : ' (fill in the [brackets], or complete your profile first)'}</span>
           <textarea readOnly rows={9} value={`Subject: ${draftSubject(o)}\n\n${text}`} />
         </label>
         <div className="row">
-          <button className="btn" type="button" onClick={copy}>
+          <button className="btn btn-secondary" type="button" onClick={copy}>
             {copied ? 'Copied' : 'Copy message'}
           </button>
           {mailto && (
-            <a className="btn" href={mailto}>
-              Open in email app
+            <a className="link" href={mailto}>
+              Open in email app ›
             </a>
           )}
           <span role="status" className="sr-only">

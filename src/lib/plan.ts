@@ -141,23 +141,48 @@ function fold(line: string): string {
   return out.join('\r\n')
 }
 
-export function toICS(tasks: Task[], titleFor: (id: string) => string): string {
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ResearchLink//Action plan//EN', 'CALSCALE:GREGORIAN']
+export const ICS_FILENAME = 'research-plan.ics'
+
+/** The steps one application needs, including shared steps (CV, transcript, reference) that cover it. */
+export function tasksFor(tasks: Task[], opportunityId: string): Task[] {
+  return tasks.filter((t) => t.forIds.includes(opportunityId))
+}
+
+const icsDate = (isoDate: string) => isoDate.replace(/-/g, '')
+const nextDay = (isoDate: string) => icsDate(iso(addDays(parseDate(isoDate), 1)))
+const eventDetails = (t: Task, titleFor: (id: string) => string) => `${t.detail}\nFor: ${t.forIds.map(titleFor).join('; ')}`
+
+/**
+ * All-day events for any list of tasks (the whole plan, or one application's steps
+ * from `tasksFor`). Each UID depends only on the task id, so importing the file again
+ * updates the events instead of duplicating them, even after a due date moves.
+ */
+export function toICS(tasks: Task[], titleFor: (id: string) => string, now: Date = new Date()): string {
+  const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ResearchLink//Action plan//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH']
   for (const t of tasks) {
-    const start = t.due.replace(/-/g, '')
-    const end = iso(addDays(parseDate(t.due), 1)).replace(/-/g, '')
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${t.id}-${start}@researchlink`,
+      `UID:${t.id}@researchlink`,
       `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${start}`,
-      `DTEND;VALUE=DATE:${end}`,
+      `DTSTART;VALUE=DATE:${icsDate(t.due)}`,
+      `DTEND;VALUE=DATE:${nextDay(t.due)}`,
       fold(`SUMMARY:${icsEscape(t.title)}`),
-      fold(`DESCRIPTION:${icsEscape(`${t.detail}\nFor: ${t.forIds.map(titleFor).join('; ')}`)}`),
+      fold(`DESCRIPTION:${icsEscape(eventDetails(t, titleFor))}`),
       'END:VEVENT',
     )
   }
   lines.push('END:VCALENDAR')
   return lines.join('\r\n') + '\r\n'
+}
+
+/** A prefilled all-day Google Calendar event. Opening it sends nothing until the student saves it. */
+export function googleCalendarUrl(t: Task, titleFor: (id: string) => string): string {
+  const q = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: t.title,
+    dates: `${icsDate(t.due)}/${nextDay(t.due)}`,
+    details: eventDetails(t, titleFor),
+  })
+  return `https://calendar.google.com/calendar/render?${q.toString()}`
 }

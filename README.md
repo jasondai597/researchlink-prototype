@@ -10,8 +10,8 @@ matching and browse every open listing, each one showing when it was last verifi
 
 ## What it does
 
-1. **Profile (intake):** year, program, research experience, skills (self-rated:
-   familiar / can use it / confident), hours per week, terms, what you're looking for
+1. **Profile (intake):** year, program, research experience, skills (for each one:
+   not yet / want to learn / familiar / can use it / confident), hours per week, terms, what you're looking for
    (credit / paid / volunteer), interest areas plus a free-text description, and
    optional eligibility (GPA, federal award eligibility).
 2. **Matching:**
@@ -22,6 +22,11 @@ matching and browse every open listing, each one showing when it was last verifi
      credit one level below), interests 30% (area overlap blended with TF-IDF cosine
      similarity between your free text and the listing), time 20%, experience 10%.
      A compensation type you didn't ask for reduces the score by 15%.
+   - **Want to learn.** "Not yet" stores nothing. "Want to learn" never counts toward
+     a required skill (the gap says "asks for …; you want to learn it"). When a
+     listing teaches a skill you want to learn, the card says so ("You want to learn
+     X, and this project teaches it on the job") and the score gets +0.05, once per
+     listing, capped at 1.
    - **Shown as bands with reasons** (Strong match / Worth a try / Stretch), not as a
      percentage. The weights aren't calibrated against real outcomes, so a number
      would look more precise than it is.
@@ -38,7 +43,14 @@ matching and browse every open listing, each one showing when it was last verifi
    supervisors 35 days before, references 28, CV 14, transcript 10, statement 10,
    form 3, submit 2). Steps shared across applications, such as the CV, are merged.
    A step whose ideal date has already passed moves to today and is flagged. You can
-   check steps off, export them to a calendar (.ics), or print the plan.
+   check steps off or print the plan.
+7. **Calendar:** "Add all to calendar" downloads every step as `research-plan.ics`;
+   each application in the Deadlines list has its own button that exports just its
+   steps, including shared steps (CV, transcript, reference) that cover it. Event
+   UIDs depend only on the step, so importing again updates events instead of
+   duplicating them. After a download the app says how to import the file and marks
+   the application "In your calendar". Each step also has a "Google Calendar ›" link
+   that opens a prefilled all-day event in a new tab.
 6. **Informal outreach:** when a listing has a contact, the plan adds a first-contact
    step 21 days before the deadline (within 2 days for rolling listings), named for
    the contact's preferred channel: a 10-minute chat, office hours or email. It shows
@@ -66,9 +78,33 @@ src/lib/match.ts            filters, scoring, bands, reasons
 src/lib/plan.ts             backwards scheduling, merging, .ics export
 src/lib/directory.ts        freshness rules, directory filters and sorting
 src/lib/outreach.ts         informal first-contact steps and message drafts
+src/lib/store.ts            localStorage, loading older saved answers
+src/lib/study.ts            usability-study event log (off unless ?study=1)
 src/lib/*.test.ts           tests
-src/components/             Intake, Results, Browse, Plan pages; Art (illustrations)
+src/data/site.ts            photo credit and alt text
+src/components/             Intake, Results, Browse, Plan pages; StudyPanel; Icon (brand mark)
+src/index.css               design tokens (light and dark) and all styles
+public/campus.jpg           homepage photo (credited in the footer)
 ```
+
+## Usability study mode
+
+For facilitated sessions only; normal visitors never see it.
+
+- **Start:** open the app with `?study=1`, e.g. `index.html?study=1#/start`. It stays
+  on for that browser tab (sessionStorage). `?study=0` turns it off.
+- **What it records** (to localStorage `researchlink-study`, in this browser only,
+  never sent anywhere): `start_click`, `first_input` (first change to any form field),
+  `submit_attempt` (with the validation error count), `results_view`, `add_to_plan` /
+  `remove_from_plan` (listing id), `plan_view`, `calendar_export` (listing id or
+  `all`), `google_calendar_click` (step id), `route` (every page change), `edit_click`
+  and `back_click`.
+- **Facilitator panel:** the "Study" button at the bottom left. Enter a participant
+  ID; the timer runs from task start (the earlier of `start_click` and `first_input`)
+  to the first `calendar_export`.
+- **Export:** "Copy CSV" copies `participant, event, time (ISO), ms_since_start,
+  detail`, one row per event. Paste it into a spreadsheet.
+- **Next participant:** "Reset session" clears the log and the saved answers.
 
 ## Roadmap
 

@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { AREAS, COMP_LABELS, EXPERIENCE_TYPES, LEVEL_LABELS, SKILLS, TERM_LABELS } from '../data/catalog'
+import { logStudy, logStudyOnce } from '../lib/study'
 import type { Compensation, Experience, FederalEligibility, Profile, Purpose, SkillLevel, Term } from '../lib/types'
 
 const BLANK: Profile = {
@@ -8,6 +9,7 @@ const BLANK: Profile = {
   experience: 'none',
   experienceTypes: [],
   skills: {},
+  wantToLearn: [],
   hoursPerWeek: 6,
   terms: [],
   goals: [],
@@ -17,6 +19,10 @@ const BLANK: Profile = {
   gpa: null,
   federalEligible: null,
 }
+
+const STEP_COUNT = 6
+
+const YEARS = [1, 2, 3, 4, 5].map((y) => ({ v: y, label: y === 5 ? '5th+' : `${y}${['st', 'nd', 'rd', 'th'][y - 1]}` }))
 
 const EXPERIENCE: { v: Experience; label: string }[] = [
   { v: 'none', label: 'Not yet' },
@@ -30,8 +36,106 @@ const PURPOSE: { v: Purpose; label: string }[] = [
   { v: 'grad', label: 'Prepare for grad school' },
 ]
 
+const FEDERAL: { v: FederalEligibility; label: string }[] = [
+  { v: 'yes', label: 'Yes' },
+  { v: 'no', label: 'No' },
+  { v: 'unsure', label: 'Not sure' },
+]
+
+type SkillChoice = 'none' | 'want' | SkillLevel
+const SKILL_CHOICES: { v: SkillChoice; label: string }[] = [
+  { v: 'none', label: 'Not yet' },
+  { v: 'want', label: 'Want to learn' },
+  { v: 1, label: LEVEL_LABELS[1] },
+  { v: 2, label: LEVEL_LABELS[2] },
+  { v: 3, label: LEVEL_LABELS[3] },
+]
+
 function toggle<T>(list: T[], v: T): T[] {
   return list.includes(v) ? list.filter((x) => x !== v) : [...list, v]
+}
+
+/** A skill is rated, wanted, or neither ("Not yet"), never both. */
+function setSkill(p: Profile, skill: string, choice: SkillChoice): Pick<Profile, 'skills' | 'wantToLearn'> {
+  const skills = { ...p.skills }
+  delete skills[skill]
+  const wantToLearn = p.wantToLearn.filter((s) => s !== skill)
+  if (choice === 'want') wantToLearn.push(skill)
+  else if (choice !== 'none') skills[skill] = choice
+  return { skills, wantToLearn }
+}
+
+function Step({ n, title, optional, children }: { n: number; title: string; optional?: boolean; children: ReactNode }) {
+  return (
+    <section className="step" aria-labelledby={`step-${n}`}>
+      <p className="step-num">
+        Step {n} of {STEP_COUNT}
+      </p>
+      <h2 id={`step-${n}`} tabIndex={-1}>
+        {title}
+        {optional && <span className="opt">optional</span>}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
+/** One choice from a few: real radio inputs, drawn as a segmented control. */
+function Segmented<T extends string | number>({
+  name,
+  legend,
+  options,
+  value,
+  onChange,
+  className = '',
+}: {
+  name: string
+  legend: ReactNode
+  options: { v: T; label: string }[]
+  value: T | null
+  onChange: (v: T) => void
+  className?: string
+}) {
+  return (
+    <fieldset className="group">
+      <legend>{legend}</legend>
+      <div className={`seg ${className}`}>
+        {options.map((o) => (
+          <label key={String(o.v)}>
+            <input className="vh" type="radio" name={name} checked={value === o.v} onChange={() => onChange(o.v)} />
+            <span>{o.label}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+/** Any number from a list: real checkboxes, drawn as pill chips. */
+function Chips<T extends string>({
+  legend,
+  options,
+  values,
+  onToggle,
+}: {
+  legend: ReactNode
+  options: { v: T; label: string }[]
+  values: T[]
+  onToggle: (v: T) => void
+}) {
+  return (
+    <fieldset className="group">
+      <legend>{legend}</legend>
+      <div className="chips">
+        {options.map((o) => (
+          <label key={o.v} className="chip">
+            <input className="vh" type="checkbox" checked={values.includes(o.v)} onChange={() => onToggle(o.v)} />
+            <span>{o.label}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
 }
 
 export function Intake({ initial, onSubmit }: { initial: Profile | null; onSubmit: (p: Profile) => void }) {
@@ -46,8 +150,10 @@ export function Intake({ initial, onSubmit }: { initial: Profile | null; onSubmi
     if (!p.terms.length) errs.push('Pick at least one term you could work in.')
     if (!p.interests.length && !p.interestText.trim()) errs.push('Pick at least one area or describe what interests you.')
     setErrors(errs)
+    logStudy('submit_attempt', `errors=${errs.length}`)
     if (errs.length) {
-      document.getElementById('form-errors')?.focus()
+      // Wait for the summary to render, then move focus to it.
+      window.setTimeout(() => document.getElementById('form-errors')?.focus(), 0)
       return
     }
     onSubmit({ ...p, interestText: p.interestText.trim(), program: p.program.trim() })
@@ -55,87 +161,52 @@ export function Intake({ initial, onSubmit }: { initial: Profile | null; onSubmi
 
   return (
     <div className="intake">
-
-      <form className="intake-form" onSubmit={submit} noValidate>
-        <section className="q">
-          <h2>
-            <span className="q-num">1</span>About you
-          </h2>
-          <fieldset>
-            <legend>Year of study</legend>
-            <div className="seg">
-              {[1, 2, 3, 4, 5].map((y) => (
-                <label key={y}>
-                  <input type="radio" name="year" checked={p.year === y} onChange={() => set({ year: y })} />
-                  <span>{y === 5 ? '5th+' : `${y}${['st', 'nd', 'rd', 'th'][y - 1]}`}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+      <form className="intake-form" onSubmit={submit} onChange={() => logStudyOnce('first_input')} noValidate>
+        <Step n={1} title="About you">
+          <Segmented name="year" legend="Year of study" options={YEARS} value={p.year || null} onChange={(year) => set({ year })} className="seg-fit" />
           <label className="field">
-            <span>
+            <span className="field-label">
               Program or major <span className="opt">optional</span>
             </span>
             <input value={p.program} onChange={(e) => set({ program: e.target.value })} placeholder="e.g., Statistics, Cognitive Science" />
           </label>
-        </section>
+        </Step>
 
-        <section className="q">
-          <h2>
-            <span className="q-num">2</span>Experience
-          </h2>
-          <fieldset>
-            <legend>Have you done research before?</legend>
-            <div className="seg">
-              {EXPERIENCE.map((x) => (
-                <label key={x.v}>
-                  <input type="radio" name="exp" checked={p.experience === x.v} onChange={() => set({ experience: x.v })} />
-                  <span>{x.label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend>
-              Anything you've done, even in a course or club? <span className="opt">optional</span>
-            </legend>
-            <div className="chips">
-              {EXPERIENCE_TYPES.map((t) => (
-                <label key={t} className="chip">
-                  <input type="checkbox" checked={p.experienceTypes.includes(t)} onChange={() => set({ experienceTypes: toggle(p.experienceTypes, t) })} />
-                  <span>{t}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </section>
+        <Step n={2} title="Experience">
+          <Segmented name="exp" legend="Have you done research before?" options={EXPERIENCE} value={p.experience} onChange={(experience) => set({ experience })} />
+          <Chips
+            legend={
+              <>
+                Anything you've done, even in a course or club? <span className="opt">optional</span>
+              </>
+            }
+            options={EXPERIENCE_TYPES.map((t) => ({ v: t as string, label: t }))}
+            values={p.experienceTypes}
+            onToggle={(t) => set({ experienceTypes: toggle(p.experienceTypes, t) })}
+          />
+        </Step>
 
-        <section className="q">
-          <h2>
-            <span className="q-num">3</span>Skills
-          </h2>
-          <p className="hint">Rate only what you've used. Leave the rest blank; many projects teach skills on the job.</p>
+        <Step n={3} title="Skills">
+          <p className="hint">“Not yet” is a fine answer. Tell us what you'd like to learn and we'll look for projects that teach it.</p>
           <div className="skills">
-            {SKILLS.map((s) => {
-              const lvl = p.skills[s] ?? 0
+            {SKILLS.map((s, i) => {
+              const value: SkillChoice = p.skills[s] ?? (p.wantToLearn.includes(s) ? 'want' : 'none')
               return (
-                <div className="skill-row" key={s} role="radiogroup" aria-label={s}>
-                  <span className="skill-name">{s}</span>
-                  <div className="levels">
-                    {([0, 1, 2, 3] as const).map((l) => (
-                      <label key={l} className={l === 0 ? 'lvl lvl-none' : 'lvl'}>
+                <div className="skill-row" key={s} role="radiogroup" aria-labelledby={`skill-${i}`}>
+                  <span className="skill-name" id={`skill-${i}`}>
+                    {s}
+                  </span>
+                  <div className="seg seg-skill">
+                    {SKILL_CHOICES.map((c) => (
+                      <label key={c.v} className={c.v === 'want' ? 'seg-want' : undefined}>
                         <input
+                          className="vh"
                           type="radio"
-                          name={`skill-${s}`}
-                          checked={lvl === l}
-                          onChange={() => {
-                            const next = { ...p.skills }
-                            if (l === 0) delete next[s]
-                            else next[s] = l as SkillLevel
-                            set({ skills: next })
-                          }}
+                          name={`skill-${i}`}
+                          checked={value === c.v}
+                          onChange={() => set(setSkill(p, s, c.v))}
                         />
-                        <span>{l === 0 ? '–' : LEVEL_LABELS[l]}</span>
+                        <span>{c.label}</span>
                       </label>
                     ))}
                   </div>
@@ -143,89 +214,63 @@ export function Intake({ initial, onSubmit }: { initial: Profile | null; onSubmi
               )
             })}
           </div>
-        </section>
+        </Step>
 
-        <section className="q">
-          <h2>
-            <span className="q-num">4</span>Availability
-          </h2>
+        <Step n={4} title="Availability">
           <label className="field field-inline">
-            Hours a week during term
-            <input type="number" min={1} max={40} value={p.hoursPerWeek} onChange={(e) => set({ hoursPerWeek: Math.max(1, Number(e.target.value) || 1) })} />
+            <span className="field-label">Hours a week during term</span>
+            <input
+              type="number"
+              min={1}
+              max={40}
+              value={p.hoursPerWeek}
+              onChange={(e) => set({ hoursPerWeek: Math.max(1, Number(e.target.value) || 1) })}
+            />
           </label>
-          <fieldset>
-            <legend>Terms you could work in</legend>
-            <div className="chips">
-              {(Object.keys(TERM_LABELS) as Term[]).map((t) => (
-                <label key={t} className="chip">
-                  <input type="checkbox" checked={p.terms.includes(t)} onChange={() => set({ terms: toggle(p.terms, t) })} />
-                  <span>{TERM_LABELS[t]}{t === 'summer' ? ' (often full-time)' : ''}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend>
-              What are you looking for? <span className="opt">pick any, or none</span>
-            </legend>
-            <div className="chips">
-              {(Object.keys(COMP_LABELS) as Compensation[]).map((c) => (
-                <label key={c} className="chip">
-                  <input type="checkbox" checked={p.goals.includes(c)} onChange={() => set({ goals: toggle(p.goals, c) })} />
-                  <span>{COMP_LABELS[c]}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </section>
+          <Chips
+            legend="Terms you could work in"
+            options={(Object.keys(TERM_LABELS) as Term[]).map((t) => ({ v: t, label: `${TERM_LABELS[t]}${t === 'summer' ? ' (often full-time)' : ''}` }))}
+            values={p.terms}
+            onToggle={(t) => set({ terms: toggle(p.terms, t) })}
+          />
+          <Chips
+            legend={
+              <>
+                What are you looking for? <span className="opt">pick any, or none</span>
+              </>
+            }
+            options={(Object.keys(COMP_LABELS) as Compensation[]).map((c) => ({ v: c, label: COMP_LABELS[c] }))}
+            values={p.goals}
+            onToggle={(c) => set({ goals: toggle(p.goals, c) })}
+          />
+        </Step>
 
-        <section className="q">
-          <h2>
-            <span className="q-num">5</span>Interests
-          </h2>
-          <fieldset>
-            <legend>Areas you're curious about</legend>
-            <div className="chips">
-              {AREAS.map((a) => (
-                <label key={a.id} className="chip">
-                  <input type="checkbox" checked={p.interests.includes(a.id)} onChange={() => set({ interests: toggle(p.interests, a.id) })} />
-                  <span>{a.label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+        <Step n={5} title="Interests">
+          <Chips
+            legend="Areas you're curious about"
+            options={AREAS.map((a) => ({ v: a.id as string, label: a.label }))}
+            values={p.interests}
+            onToggle={(a) => set({ interests: toggle(p.interests, a) })}
+          />
           <label className="field">
-            <span>
+            <span className="field-label">
               In your own words <span className="opt">optional, improves matches</span>
             </span>
             <textarea
-              rows={2}
+              rows={3}
               maxLength={300}
               value={p.interestText}
               onChange={(e) => set({ interestText: e.target.value })}
               placeholder="e.g., how people make decisions under uncertainty, NLP for public transit"
             />
           </label>
-          <fieldset>
-            <legend>Why research, right now?</legend>
-            <div className="seg seg-wide">
-              {PURPOSE.map((x) => (
-                <label key={x.v}>
-                  <input type="radio" name="purpose" checked={p.purpose === x.v} onChange={() => set({ purpose: x.v })} />
-                  <span>{x.label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </section>
+          <Segmented name="purpose" legend="Why research, right now?" options={PURPOSE} value={p.purpose} onChange={(purpose) => set({ purpose })} />
+        </Step>
 
-        <section className="q q-optional">
-          <h2>
-            <span className="q-num">6</span>Eligibility <span className="opt">optional</span>
-          </h2>
+        <Step n={6} title="Eligibility" optional>
           <p className="hint">Some awards have GPA or citizenship rules. Answering filters out what you can't apply to. Leave blank to see everything.</p>
           <label className="field field-inline">
-            Cumulative GPA (4.0 scale)
+            <span className="field-label">Cumulative GPA (4.0 scale)</span>
             <input
               type="number"
               step="0.1"
@@ -235,18 +280,15 @@ export function Intake({ initial, onSubmit }: { initial: Profile | null; onSubmi
               onChange={(e) => set({ gpa: e.target.value === '' ? null : Math.min(4, Math.max(0, Number(e.target.value))) })}
             />
           </label>
-          <fieldset>
-            <legend>Do you meet Canadian federal award eligibility (citizen or permanent resident)?</legend>
-            <div className="seg">
-              {(['yes', 'no', 'unsure'] as FederalEligibility[]).map((v) => (
-                <label key={v}>
-                  <input type="radio" name="fed" checked={p.federalEligible === v} onChange={() => set({ federalEligible: v })} />
-                  <span>{v === 'unsure' ? 'Not sure' : v[0].toUpperCase() + v.slice(1)}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </section>
+          <Segmented
+            name="fed"
+            legend="Do you meet Canadian federal award eligibility (citizen or permanent resident)?"
+            options={FEDERAL}
+            value={p.federalEligible}
+            onChange={(federalEligible) => set({ federalEligible })}
+            className="seg-fit"
+          />
+        </Step>
 
         <div className="submit-bar">
           {errors.length > 0 && (
