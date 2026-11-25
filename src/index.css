@@ -218,7 +218,7 @@ legend { padding: 0; }
 
 .campus-wrap { width: 100%; max-width: 1240px; margin: 56px auto 0; padding: 0 var(--gutter); }
 .campus {
-  display: block; width: 100%; height: 520px; object-fit: cover; object-position: center 38%;
+  display: block; width: 100%; height: 520px; object-fit: cover; object-position: center 12%; /* keeps the top of the CN Tower in frame */
   border-radius: var(--r-hero); background: var(--surface);
   box-shadow: 0 30px 80px -30px rgba(15, 30, 60, 0.35);
 }
